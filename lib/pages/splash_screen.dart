@@ -4,6 +4,8 @@ import '../theme/app_colors.dart';
 import 'main_page.dart'; 
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -13,8 +15,14 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 6), () {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => MainPage()));
+      // Directly replace splash with MainPage (no animation)
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const MainPage(),
+          transitionDuration: Duration.zero, // no transition animation
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
     });
   }
 
@@ -23,7 +31,7 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Center(
-        child: Image.asset('assets/rafiq_logo.jpg'), 
+        child: Image.asset('assets/rafiq_logo.jpg'),
       ),
     );
   }
