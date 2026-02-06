@@ -1,29 +1,24 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'login_page.dart';
 import 'main_page.dart';
-import 'signup_page.dart';
 import '../widgets/auth.dart';
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+class SignUpPage extends StatelessWidget {
+  const SignUpPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    final double sidePadding = 26;
-    final double contentWidth = size.width - (sidePadding * 2);
-    final double fieldHeight = 54;
-    final double baseTop = size.height * 0.45;
+    const sidePadding = 26.0;
+    final baseTop = size.height * 0.45;
 
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image
           Image.asset('assets/riyadh.jpeg', fit: BoxFit.cover),
-
-          // Light overlay
           Container(color: Colors.black.withOpacity(0.08)),
 
           SafeArea(
@@ -49,67 +44,28 @@ class LoginPage extends StatelessWidget {
                   top: baseTop,
                   left: sidePadding,
                   right: sidePadding,
-                  child: SizedBox(
-                    width: contentWidth,
-                    child: const AuthInputField(hint: 'Email', obscure: false),
-                  ),
+                  child: const AuthInputField(hint: 'Email', obscure: false),
+                ),
+
+                // Name field
+                Positioned(
+                  top: baseTop + 70,
+                  left: sidePadding,
+                  right: sidePadding,
+                  child: const AuthInputField(hint: 'Name', obscure: false),
                 ),
 
                 // Password field
                 Positioned(
-                  top: baseTop + fieldHeight + 16,
+                  top: baseTop + 140,
                   left: sidePadding,
                   right: sidePadding,
-                  child: SizedBox(
-                    width: contentWidth,
-                    child: const AuthInputField(
-                      hint: 'Password',
-                      obscure: true,
-                    ),
-                  ),
+                  child: const AuthInputField(hint: 'Password', obscure: true),
                 ),
 
-                // Forget password
+                // Sign up button
                 Positioned(
-                  top: baseTop + (fieldHeight * 2) + 26,
-                  left: sidePadding,
-                  right: sidePadding,
-                  child: Center(
-                    child: RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Forget your password? ',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(1.0),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          WidgetSpan(
-                            child: GestureDetector(
-                              onTap: () {},
-                              child: const Text(
-                                'Click me',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  decoration: TextDecoration.underline,
-                                  decorationThickness: 1.2,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Login button
-                Positioned(
-                  top: baseTop + (fieldHeight * 2) + 70,
+                  top: baseTop + 210,
                   left: 0,
                   right: 0,
                   child: Center(
@@ -125,17 +81,16 @@ class LoginPage extends StatelessWidget {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(22),
                           ),
                         ),
                         child: const Text(
-                          'Log in',
+                          'Sign up',
                           style: TextStyle(
                             color: Colors.white,
+                            fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -145,7 +100,7 @@ class LoginPage extends StatelessWidget {
 
                 // OR line
                 Positioned(
-                  top: baseTop + (fieldHeight * 2) + 150,
+                  top: baseTop + 270,
                   left: sidePadding + 10,
                   right: sidePadding + 10,
                   child: Row(
@@ -179,7 +134,7 @@ class LoginPage extends StatelessWidget {
 
                 // Social buttons
                 Positioned(
-                  top: baseTop + (fieldHeight * 2) + 190,
+                  top: baseTop + 290,
                   left: 0,
                   right: 0,
                   child: Row(
@@ -212,38 +167,32 @@ class LoginPage extends StatelessWidget {
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: "Don't Have An Account? ",
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(1.0),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          WidgetSpan(
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const SignUpPage(),
-                                  ),
-                                );
-                              },
-                              child: const Text(
-                                'Sign up',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                        );
+                      },
+                      child: RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Already have an account? ',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.normal,
                               ),
                             ),
-                          ),
-                        ],
+                            TextSpan(
+                              text: 'Log in',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
