@@ -10,15 +10,13 @@ class ScanPage extends StatefulWidget {
 }
 
 class _ScanPageState extends State<ScanPage> {
-  int _currentIndex = 2;
+  final int _currentIndex = 2;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: const Center(
-        child: Text('Scan Page'),
-      ),
+      body: const Center(child: Text('Scan Page')),
       bottomNavigationBar: CustomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {

@@ -10,15 +10,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int _currentIndex = 4;
+  final int _currentIndex = 4;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: const Center(
-        child: Text('Profile Page'),
-      ),
+      body: const Center(child: Text('Profile Page')),
       bottomNavigationBar: CustomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {

@@ -9,6 +9,12 @@ flutter:
   assets:
     - assets/rafiq_logo.jpg
     - assets/Albalad.jpg
+    - assets/login_image.jpg
+    - assets/google_logo.png
+    - assets/riyadh.jpeg
+    - assets/account.png
+    - assets/
+
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43

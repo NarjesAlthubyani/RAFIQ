@@ -10,15 +10,13 @@ class NearbyPage extends StatefulWidget {
 }
 
 class _NearbyPageState extends State<NearbyPage> {
-  int _currentIndex = 1;
+  final int _currentIndex = 1;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: const Center(
-        child: Text('Nearby Page'),
-      ),
+      body: const Center(child: Text('Nearby Page')),
       bottomNavigationBar: CustomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
