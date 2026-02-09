@@ -31,20 +31,20 @@ class CustomNavBar extends StatelessWidget {
           backgroundColor: AppColors.background,
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.accent,
-          type: BottomNavigationBarType.fixed, 
+          type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home),
               label: 'Home',
             ),
-             BottomNavigationBarItem(
+            BottomNavigationBarItem(
               icon: Icon(Icons.near_me),
               activeIcon: Icon(Icons.near_me),
               label: 'Nearby',
             ),
             BottomNavigationBarItem(
-              icon: Icon(size: 38,Icons.camera_alt_outlined),
+              icon: Icon(size: 38, Icons.camera_alt_outlined),
               activeIcon: Icon(size: 38, Icons.camera_alt_sharp),
               label: '  Scan a \nLandmark',
             ),
