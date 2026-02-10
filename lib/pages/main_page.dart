@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import '../widgets/nav_bar.dart';
 import '../theme/app_colors.dart';
 import 'nearby_page.dart';
-import 'scan_page.dart';
 import 'profile_page.dart';
 import 'destination_date_page.dart';
-import 'trip_loading_page.dart';
-import 'trip_results_page.dart';
+import 'my_trips_page.dart';
+import 'scan_page.dart';
 
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  final int initialIndex;
+  
+  const MainPage({
+    super.key,
+    this.initialIndex = 0, 
+  });
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -22,9 +26,15 @@ class _MainPageState extends State<MainPage> {
     const HomeContent(),
     const NearbyPage(),
     const ScanPage(),
-    const DestinationDatePage(),
+    const MyTripsPage(),
     const ProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +53,6 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-// Your Home page UI
 class HomeContent extends StatelessWidget {
   const HomeContent({super.key});
 

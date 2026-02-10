@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import 'trip_loading_page.dart'; // Add this import
+import 'trip_loading_page.dart'; 
 
 class MyTripPage extends StatefulWidget {
   const MyTripPage({Key? key}) : super(key: key);
@@ -285,8 +285,8 @@ class _MyTripPageState extends State<MyTripPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context); // Close the dialog
-              _navigateToLoadingPage(selectedInterests); // Navigate to loading page
+              Navigator.pop(context); 
+              _navigateToLoadingPage(selectedInterests); 
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
@@ -300,7 +300,6 @@ class _MyTripPageState extends State<MyTripPage> {
   }
 
   void _navigateToLoadingPage(List<String> selectedInterests) {
-    // Create sample dates (next month, 5-day trip)
     final fromDate = DateTime.now().add(const Duration(days: 30));
     final toDate = fromDate.add(const Duration(days: 5));
 
@@ -308,7 +307,7 @@ class _MyTripPageState extends State<MyTripPage> {
       context,
       MaterialPageRoute(
         builder: (context) => TripLoadingPage(
-          destination: 'Jeddah', // You can make this dynamic
+          destination: 'Jeddah',
           fromDate: fromDate,
           toDate: toDate,
           budgetRange: _selectedBudgetRange!,

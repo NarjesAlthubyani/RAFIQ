@@ -15,7 +15,6 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 6), () {
-      // Directly replace splash with MainPage (no animation)
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (_, __, ___) => const MainPage(),
