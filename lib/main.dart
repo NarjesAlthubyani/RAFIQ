@@ -1,48 +1,30 @@
 import 'package:flutter/material.dart';
-import '../pages/splash_screen.dart';
-import '../pages/main_page.dart';
-import '../pages/my_trip_page.dart';
-import '../pages/nearby_page.dart';
-import '../pages/scan_page.dart';
-import '../pages/profile_page.dart';
+import 'pages/splash_screen.dart';
+import 'pages/login_page.dart';
+import 'pages/signup_page.dart';
+import 'pages/home_page.dart';
+import 'pages/my_trips_page.dart';  
+import 'theme/app_colors.dart';
 
 void main() => runApp(const RafiqApp());
 
-class RafiqApp extends StatefulWidget {
+class RafiqApp extends StatelessWidget {
   const RafiqApp({super.key});
-
-  static _RafiqAppState of(BuildContext context) =>
-      context.findAncestorStateOfType<_RafiqAppState>()!;
-
-  @override
-  State<RafiqApp> createState() => _RafiqAppState();
-}
-
-class _RafiqAppState extends State<RafiqApp> {
-  bool isDark = false;
-
-  void toggleTheme(bool value) {
-    setState(() => isDark = value);
-  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Rafiq App',
-
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-
+      theme: ThemeData(
+        scaffoldBackgroundColor: AppColors.background,
+      ),
       home: const SplashScreen(),
-
       routes: {
-        '/home': (context) => const MainPage(),
-        '/nearby': (context) => const NearbyPage(),
-        '/scan': (context) => const ScanPage(),
-        '/mytrip': (context) => const MyTripPage(),
-        '/profile': (context) => const ProfilePage(),
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const SignUpPage(),
+        '/main': (context) => const HomePage(),
+        '/my_trips': (context) => const MyTripsPage(),
       },
     );
   }

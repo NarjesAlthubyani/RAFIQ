@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import 'main_page.dart';
-import 'signup_page.dart';
 import '../widgets/auth.dart';
+import 'home_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -88,7 +87,9 @@ class LoginPage extends StatelessWidget {
                           ),
                           WidgetSpan(
                             child: GestureDetector(
-                              onTap: () {},
+                              onTap: () {
+                                // Handle forgot password
+                              },
                               child: const Text(
                                 'Click me',
                                 style: TextStyle(
@@ -120,7 +121,7 @@ class LoginPage extends StatelessWidget {
                         onPressed: () {
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (_) => const MainPage()),
+                            MaterialPageRoute(builder: (context) => const HomePage()),
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -186,7 +187,9 @@ class LoginPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SocialSquare(
-                        onTap: () {},
+                        onTap: () {
+                          // Handle Facebook login
+                        },
                         child: Image.asset(
                           'assets/facebook_logo.png',
                           width: 45,
@@ -195,7 +198,9 @@ class LoginPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 18),
                       SocialSquare(
-                        onTap: () {},
+                        onTap: () {
+                          // Handle Google login
+                        },
                         child: Image.asset(
                           'assets/google_logo.png',
                           width: 26,
@@ -226,11 +231,9 @@ class LoginPage extends StatelessWidget {
                           WidgetSpan(
                             child: GestureDetector(
                               onTap: () {
-                                Navigator.pushReplacement(
+                                Navigator.pushReplacementNamed(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const SignUpPage(),
-                                  ),
+                                  '/signup',
                                 );
                               },
                               child: const Text(

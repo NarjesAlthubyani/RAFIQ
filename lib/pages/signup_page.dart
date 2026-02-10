@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import 'login_page.dart';
-import 'main_page.dart';
 import '../widgets/auth.dart';
 
 class SignUpPage extends StatelessWidget {
@@ -74,10 +72,7 @@ class SignUpPage extends StatelessWidget {
                       height: 52,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const MainPage()),
-                          );
+                          Navigator.pushReplacementNamed(context, '/main');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -141,7 +136,9 @@ class SignUpPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SocialSquare(
-                        onTap: () {},
+                        onTap: () {
+                          // Handle Facebook signup
+                        },
                         child: Image.asset(
                           'assets/facebook_logo.png',
                           width: 45,
@@ -150,7 +147,9 @@ class SignUpPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 18),
                       SocialSquare(
-                        onTap: () {},
+                        onTap: () {
+                          // Handle Google signup
+                        },
                         child: Image.asset(
                           'assets/google_logo.png',
                           width: 26,
@@ -169,9 +168,9 @@ class SignUpPage extends StatelessWidget {
                   child: Center(
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.pushReplacement(
+                        Navigator.pushReplacementNamed(
                           context,
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                          '/login',
                         );
                       },
                       child: RichText(

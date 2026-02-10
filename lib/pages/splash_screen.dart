@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import 'login_page.dart';
+import 'login_page.dart'; 
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,19 +14,20 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 6), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
-    });
+    Timer(const Duration(seconds: 3), () {
+      Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+    }); 
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(child: Image.asset('assets/rafiq_logo.jpg')),
+      body: Center(
+        child: Image.asset('assets/rafiq_logo.jpg'),
+      ),
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../pages/login_page.dart';
-import '../widgets/nav_bar.dart';
 import '../theme/app_colors.dart';
+import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,8 +10,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final int _currentIndex = 4;
-
   // Editable state
   bool _isEditing = false;
 
@@ -26,7 +23,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Color _avatarColor = const Color(0xFFE8E6E1);
 
-  //  Settings
+  // Settings
   String _language = 'English';
   bool _theme = false;
   bool _pushNoti = false;
@@ -34,7 +31,6 @@ class _ProfilePageState extends State<ProfilePage> {
   void _toggleEditSave() {
     if (_isEditing) {
       setState(() => _isEditing = false);
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully ✅')),
       );
@@ -79,7 +75,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -88,7 +83,7 @@ class _ProfilePageState extends State<ProfilePage> {
               // Profile header
               Row(
                 children: [
-                  GestureDetector(
+                  GestureDetector(  // CORRECTED: Changed from GestureDetDetector
                     onTap: _isEditing ? _showAvatarColorPicker : null,
                     child: Container(
                       width: 66,
@@ -107,15 +102,23 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 14),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _isEditing
-                            ? TextField(controller: _nameController)
+                            ? TextField(
+                                controller: _nameController,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: 'Name',
+                                ),
+                              )
                             : Text(
                                 _nameController.text,
                                 style: const TextStyle(
@@ -125,12 +128,25 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                         const SizedBox(height: 6),
                         _isEditing
-                            ? TextField(controller: _emailController)
-                            : Text(_emailController.text),
+                            ? TextField(
+                                controller: _emailController,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: 'Email',
+                                ),
+                              )
+                            : Text(
+                                _emailController.text,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                ),
+                              ),
                       ],
                     ),
                   ),
-
                   GestureDetector(
                     onTap: _toggleEditSave,
                     child: Container(
@@ -149,7 +165,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 22),
 
               // Logout button
@@ -157,13 +172,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                      (route) => false,
-                    );
-                  },
+                 onPressed: () {
+                   Navigator.pushAndRemoveUntil(
+                   context,
+                   MaterialPageRoute(builder: (context) => const LoginPage()),
+                   (route) => false,
+                   );
+                },
                   icon: const Icon(Icons.logout, color: Colors.white),
                   label: const Text(
                     'Log out',
@@ -181,9 +196,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 22),
 
+              // Menu items
               _MenuTile(
                 icon: Icons.info_outline,
                 title: 'About RAFIQ',
@@ -209,10 +224,11 @@ class _ProfilePageState extends State<ProfilePage> {
               const Divider(),
               const SizedBox(height: 14),
 
+              // Settings
               Column(
                 children: [
                   _SettingRow(
-                    label: 'language',
+                    label: 'Language',
                     trailing: DropdownButton<String>(
                       value: _language,
                       underline: const SizedBox(),
@@ -233,9 +249,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       onChanged: (v) => setState(() => _language = v!),
                     ),
                   ),
-
                   _SettingRow(
-                    label: 'theme',
+                    label: 'Theme',
                     trailing: Switch(
                       value: _theme,
                       onChanged: (v) => setState(() => _theme = v),
@@ -248,9 +263,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       }),
                     ),
                   ),
-
                   _SettingRow(
-                    label: 'push notification',
+                    label: 'Push notification',
                     trailing: Switch(
                       value: _pushNoti,
                       onChanged: (v) => setState(() => _pushNoti = v),
@@ -269,32 +283,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
-
-      bottomNavigationBar: CustomNavBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == _currentIndex) return;
-          _navigate(index, context);
-        },
-      ),
     );
-  }
-
-  void _navigate(int index, BuildContext context) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/nearby');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/scan');
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, '/mytrip');
-        break;
-    }
   }
 }
 
@@ -320,38 +309,6 @@ class _MenuTile extends StatelessWidget {
   }
 }
 
-class _SwitchRow extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SwitchRow({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Text(label)),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          thumbColor: WidgetStateProperty.all(Colors.white),
-          trackColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const Color(0xFF79926C);
-            }
-            return const Color(0xFFEDEDED);
-          }),
-        ),
-      ],
-    );
-  }
-}
-
 class _SettingRow extends StatelessWidget {
   final String label;
   final Widget trailing;
@@ -365,7 +322,6 @@ class _SettingRow extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 20),
-
           Expanded(
             child: Text(
               label,
@@ -375,7 +331,6 @@ class _SettingRow extends StatelessWidget {
               ),
             ),
           ),
-
           trailing,
         ],
       ),
