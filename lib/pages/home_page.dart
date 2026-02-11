@@ -6,6 +6,8 @@ import 'profile_page.dart';
 import 'destination_date_page.dart';
 import 'my_trips_page.dart';
 import 'scan_page.dart';
+import 'smart_alerts_page.dart';
+
 
 class HomePage extends StatefulWidget {
   final int initialIndex;
@@ -95,14 +97,25 @@ class HomeContent extends StatelessWidget {
                     ),
                   ],
                 ),
-                const CircleAvatar(
-                  backgroundColor: AppColors.background,
-                  child: Icon(
-                    Icons.notifications_active_outlined,
-                    color: AppColors.accent,
-                    size: 32,
-                  ),
-                ),
+                GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SmartAlertsPage(),
+                              ),
+                            );
+                          },
+                          child: const CircleAvatar(
+                            backgroundColor: AppColors.background,
+                            child: Icon(
+                              Icons.notifications_active_outlined,
+                              color: AppColors.accent,
+                              size: 32,
+                            ),
+                          ),
+                        ),
+
               ],
             ),
             const SizedBox(height: 24),
