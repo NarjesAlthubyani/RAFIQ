@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/nav_bar.dart';
 import '../theme/app_colors.dart';
 import 'nearby_page.dart';
 import 'profile_page.dart';
-import 'destination_date_page.dart';
 import 'my_trips_page.dart';
 import 'scan_page.dart';
 import 'smart_alerts_page.dart';
-
 
 class HomePage extends StatefulWidget {
   final int initialIndex;
@@ -22,8 +21,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 1. Initialize without a value here
   late int _currentIndex;
+  String _userName = "User"; // Default name
+  bool _isLoading = true;
 
   final List<Widget> _pages = [
     const HomeContent(),
@@ -36,8 +36,30 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // 2. Set the current index to the one passed in (e.g., 3 for My Trips)
     _currentIndex = widget.initialIndex;
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      
+      if (user != null) {
+        // Get name from user metadata
+        final userName = user.userMetadata?['full_name'] ?? 
+                        user.userMetadata?['name'] ?? 
+                        user.email?.split('@').first ??
+                        'User';
+        
+        setState(() {
+          _userName = userName;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -62,13 +84,17 @@ class HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get the username from the parent widget
+    final homePageState = context.findAncestorStateOfType<_HomePageState>();
+    final userName = homePageState?._userName ?? "User";
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER
+            // HEADER with dynamic user name
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -90,32 +116,33 @@ class HomeContent extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Text(
-                      "Sara",
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    Text(
+                      userName, // Dynamic user name!
+                      style: const TextStyle(
+                        fontSize: 20, 
+                        fontWeight: FontWeight.bold
+                      ),
                     ),
                   ],
                 ),
                 GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SmartAlertsPage(),
-                              ),
-                            );
-                          },
-                          child: const CircleAvatar(
-                            backgroundColor: AppColors.background,
-                            child: Icon(
-                              Icons.notifications_active_outlined,
-                              color: AppColors.accent,
-                              size: 32,
-                            ),
-                          ),
-                        ),
-
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SmartAlertsPage(),
+                      ),
+                    );
+                  },
+                  child: const CircleAvatar(
+                    backgroundColor: AppColors.background,
+                    child: Icon(
+                      Icons.notifications_active_outlined,
+                      color: AppColors.accent,
+                      size: 32,
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -143,7 +170,7 @@ class HomeContent extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // RECOMMENDED
+            // TODAY'S ACTIVITIES
             const Text(
               "Today's activities",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -176,6 +203,8 @@ class HomeContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+
+            // RECOMMENDED ACTIVITIES
             const Text(
               "Recommended activities",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),

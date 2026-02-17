@@ -6,6 +6,8 @@ class AuthInputField extends StatelessWidget {
   final bool obscure;
   final double height;
   final double radius;
+  final TextEditingController? controller; // ✅ ADD THIS LINE
+  final TextInputType? keyboardType; // Optional: for email keyboard
 
   const AuthInputField({
     super.key,
@@ -13,6 +15,8 @@ class AuthInputField extends StatelessWidget {
     required this.obscure,
     this.height = 54,
     this.radius = 12,
+    this.controller, // ✅ ADD THIS LINE
+    this.keyboardType, // ✅ ADD THIS LINE
   });
 
   @override
@@ -20,14 +24,22 @@ class AuthInputField extends StatelessWidget {
     return SizedBox(
       height: height,
       child: TextField(
+        controller: controller, // ✅ USE IT HERE
         obscureText: obscure,
+        keyboardType: keyboardType, // ✅ USE IT HERE
+        style: const TextStyle(color: Colors.black87), // Make text visible
         decoration: InputDecoration(
           filled: true,
           fillColor: AppColors.background.withOpacity(0.92),
           hintText: hint,
+          hintStyle: const TextStyle(color: Colors.grey),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(radius),
             borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
           ),
         ),
       ),

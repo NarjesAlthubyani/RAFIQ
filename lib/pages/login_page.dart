@@ -1,10 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:rafiq/services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/auth.dart';
 import 'home_page.dart';
+import 'signup_page.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _signIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await AuthService.signIn(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (response.user != null && mounted) {
+        // Success! Navigate to home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +91,11 @@ class LoginPage extends StatelessWidget {
                   right: sidePadding,
                   child: SizedBox(
                     width: contentWidth,
-                    child: const AuthInputField(hint: 'Email', obscure: false),
+                    child: AuthInputField(
+                      hint: 'Email',
+                      obscure: false,
+                      controller: _emailController,
+                    ),
                   ),
                 ),
 
@@ -61,9 +106,10 @@ class LoginPage extends StatelessWidget {
                   right: sidePadding,
                   child: SizedBox(
                     width: contentWidth,
-                    child: const AuthInputField(
+                    child: AuthInputField(
                       hint: 'Password',
                       obscure: true,
+                      controller: _passwordController,
                     ),
                   ),
                 ),
@@ -89,6 +135,7 @@ class LoginPage extends StatelessWidget {
                             child: GestureDetector(
                               onTap: () {
                                 // Handle forgot password
+                                _showForgotPasswordDialog();
                               },
                               child: const Text(
                                 'Click me',
@@ -118,12 +165,7 @@ class LoginPage extends StatelessWidget {
                       width: 190,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => const HomePage()),
-                          );
-                        },
+                        onPressed: _isLoading ? null : _signIn,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           elevation: 0,
@@ -131,14 +173,18 @@ class LoginPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(22),
                           ),
                         ),
-                        child: const Text(
-                          'Log in',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Log in',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -188,7 +234,6 @@ class LoginPage extends StatelessWidget {
                     children: [
                       SocialSquare(
                         onTap: () {
-                          // Handle Facebook login
                         },
                         child: Image.asset(
                           'assets/facebook_logo.png',
@@ -199,7 +244,6 @@ class LoginPage extends StatelessWidget {
                       const SizedBox(width: 18),
                       SocialSquare(
                         onTap: () {
-                          // Handle Google login
                         },
                         child: Image.asset(
                           'assets/google_logo.png',
@@ -231,9 +275,11 @@ class LoginPage extends StatelessWidget {
                           WidgetSpan(
                             child: GestureDetector(
                               onTap: () {
-                                Navigator.pushReplacementNamed(
+                                Navigator.pushReplacement(
                                   context,
-                                  '/signup',
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignUpPage(),
+                                  ),
                                 );
                               },
                               child: const Text(
@@ -253,6 +299,23 @@ class LoginPage extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog() {
+    // Implement forgot password
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: const Text('Please contact support or check your email for password reset.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
         ],
       ),

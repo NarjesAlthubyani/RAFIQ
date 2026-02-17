@@ -1,15 +1,32 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
-import 'trip_loading_page.dart'; 
+import 'package:rafiq/theme/app_colors.dart';
+import 'package:rafiq/pages/trip_loading_page.dart';
+import 'package:rafiq/services/trip_service.dart';
 
 class MyTripPage extends StatefulWidget {
-  const MyTripPage({Key? key}) : super(key: key);
+  final String preferenceId;
+  final String destination;
+  final DateTime fromDate;
+  final DateTime toDate;
+
+  const MyTripPage({
+    Key? key,
+    required this.preferenceId,
+    required this.destination,
+    required this.fromDate,
+    required this.toDate,
+  }) : super(key: key);
 
   @override
   _MyTripPageState createState() => _MyTripPageState();
 }
 
 class _MyTripPageState extends State<MyTripPage> {
+  late String _preferenceId;
+  late String _destination;
+  late DateTime _fromDate;
+  late DateTime _toDate;
+
   final List<Interest> _interests = [
     Interest(name: 'Culture', isSelected: false),
     Interest(name: 'Food', isSelected: false),
@@ -29,6 +46,15 @@ class _MyTripPageState extends State<MyTripPage> {
     '5000 - 10000',
     '10000+'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _preferenceId = widget.preferenceId;
+    _destination = widget.destination;
+    _fromDate = widget.fromDate;
+    _toDate = widget.toDate;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +119,7 @@ class _MyTripPageState extends State<MyTripPage> {
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: 0.66,
+              widthFactor: 1.0,
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.primary,
@@ -161,20 +187,36 @@ class _MyTripPageState extends State<MyTripPage> {
             children: List.generate(_interests.length, (index) {
               final interest = _interests[index];
               return GestureDetector(
-                onTap: () => setState(() => _interests[index] = interest.copyWith(isSelected: !interest.isSelected)),
+                onTap: () {
+                  setState(() {
+                    _interests[index] = interest.copyWith(
+                      isSelected: !interest.isSelected,
+                    );
+                  });
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: interest.isSelected ? AppColors.accent.withOpacity(0.08) : AppColors.white,
+                    color: interest.isSelected
+                        ? AppColors.accent.withOpacity(0.08)
+                        : AppColors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.accent, width: 1.6),
+                    border: Border.all(
+                      color: AppColors.accent,
+                      width: 1.6,
+                    ),
                   ),
                   child: Text(
                     interest.name,
                     style: TextStyle(
                       fontSize: 16,
-                      color: interest.isSelected ? AppColors.secondary : AppColors.textPrimary,
+                      color: interest.isSelected
+                          ? AppColors.secondary
+                          : AppColors.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -203,7 +245,11 @@ class _MyTripPageState extends State<MyTripPage> {
               color: AppColors.background,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.attach_money, color: AppColors.secondary, size: 18),
+            child: Icon(
+              Icons.attach_money,
+              color: AppColors.secondary,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -211,14 +257,25 @@ class _MyTripPageState extends State<MyTripPage> {
               child: DropdownButton<String>(
                 value: _selectedBudgetRange,
                 isExpanded: true,
-                icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-                onChanged: (String? newValue) => setState(() => _selectedBudgetRange = newValue),
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  color: AppColors.textSecondary,
+                ),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedBudgetRange = newValue;
+                  });
+                },
                 items: _budgetOptions.map((value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(
-                      '\$ $value',
-                      style: TextStyle(fontSize: 16, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                      '\SAR $value',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -240,13 +297,22 @@ class _MyTripPageState extends State<MyTripPage> {
         child: ElevatedButton(
           onPressed: selectedCount > 0 ? _showReviewDialog : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: selectedCount > 0 ? AppColors.secondary : AppColors.greyLight,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: selectedCount > 0
+                ? AppColors.secondary
+                : AppColors.greyLight,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             elevation: 0,
           ),
           child: Text(
             'Submit',
-            style: TextStyle(fontSize: 18, color: selectedCount > 0 ? AppColors.white : AppColors.textSecondary),
+            style: TextStyle(
+              fontSize: 18,
+              color: selectedCount > 0
+                  ? AppColors.white
+                  : AppColors.textSecondary,
+            ),
           ),
         ),
       ),
@@ -254,67 +320,169 @@ class _MyTripPageState extends State<MyTripPage> {
   }
 
   void _showReviewDialog() {
-    final selectedInterests = _interests.where((i) => i.isSelected).map((i) => i.name).toList();
+    final selectedInterests = _interests
+        .where((i) => i.isSelected)
+        .map((i) => i.name)
+        .toList();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.background,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        insetPadding: const EdgeInsets.all(30), 
-        title: Text('Review Your Trip', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        insetPadding: const EdgeInsets.all(30),
+        title: Text(
+          'Review Your Trip',
+          style: TextStyle(
+            color: AppColors.secondary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Budget: \$ $_selectedBudgetRange', style: TextStyle(fontSize: 16, color: AppColors.textPrimary)),
+            Text(
+              'Destination: $_destination',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Budget: SAR $_selectedBudgetRange',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Dates: ${_formatDate(_fromDate)} - ${_formatDate(_toDate)}',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
+            ),
             const SizedBox(height: 12),
-            Text('Selected Interests', style: TextStyle(fontSize: 16, color: AppColors.textPrimary)),
+            Text(
+              'Selected Interests',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 4,
-              children: selectedInterests.map((s) => Chip(label: Text(s, style: TextStyle(color: AppColors.white)), backgroundColor: AppColors.accent)).toList(),
+              children: selectedInterests
+                  .map(
+                    (s) => Chip(
+                      label: Text(
+                        s,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      backgroundColor: AppColors.accent,
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), 
-            child: Text('Back', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600))
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Back',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); 
-              _navigateToLoadingPage(selectedInterests); 
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text('Create Trip Plan', style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w600)),
+  onPressed: () async {
+    try {
+      
+      final result = await TripService.saveTripDetails(
+        preferenceId: _preferenceId,
+        budgetRange: _selectedBudgetRange!,
+        selectedInterests: selectedInterests,
+      );
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TripLoadingPage(
+            tripId: result['trip']['trip_id'],
+            destination: _destination,
+            fromDate: _fromDate,
+            toDate: _toDate,
+            budgetRange: _selectedBudgetRange!,
+            selectedInterests: selectedInterests,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog(e.toString());
+      }
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: AppColors.secondary,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+  ),
+  child: Text(
+    'Create Trip Plan',
+    style: TextStyle(
+      color: AppColors.white,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+),
+
+        ],
+      ),
+    );
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(error),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
 
-  void _navigateToLoadingPage(List<String> selectedInterests) {
-    final fromDate = DateTime.now().add(const Duration(days: 30));
-    final toDate = fromDate.add(const Duration(days: 5));
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TripLoadingPage(
-          destination: 'Jeddah',
-          fromDate: fromDate,
-          toDate: toDate,
-          budgetRange: _selectedBudgetRange!,
-          selectedInterests: selectedInterests,
-        ),
-      ),
-    );
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}';
   }
 }
 
@@ -325,6 +493,9 @@ class Interest {
   Interest({required this.name, this.isSelected = false});
 
   Interest copyWith({String? name, bool? isSelected}) {
-    return Interest(name: name ?? this.name, isSelected: isSelected ?? this.isSelected);
+    return Interest(
+      name: name ?? this.name,
+      isSelected: isSelected ?? this.isSelected,
+    );
   }
 }

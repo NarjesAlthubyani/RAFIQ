@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
-import 'login_page.dart'; 
+import 'package:rafiq/theme/app_colors.dart';
+import 'package:rafiq/pages/login_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,9 +16,9 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Timer(const Duration(seconds: 3), () {
       Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
-    }); 
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    });
   }
 
   @override

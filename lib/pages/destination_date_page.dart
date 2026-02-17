@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
-import 'create_trip_page.dart';
+import 'package:rafiq/theme/app_colors.dart';
+import 'package:rafiq/pages/my_trip_page.dart';
+import 'package:rafiq/services/trip_service.dart';
+import 'package:rafiq/services/auth_service.dart';
+import 'package:intl/intl.dart';
 
 class DestinationDatePage extends StatefulWidget {
   const DestinationDatePage({Key? key}) : super(key: key);
@@ -14,21 +17,30 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
   DateTime? _selectedToDate;
   DateTime _currentMonth = DateTime.now();
   String _destination = 'Jeddah';
+  String? _preferenceId;
+
+  final List<String> _destinations = ['Jeddah', 'Riyadh', 'AlUla'];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  void _checkAuth() {
+    if (!AuthService.isLoggedIn) {
+      Future.delayed(Duration.zero, () {
+        Navigator.pushReplacementNamed(context, '/login');
+      });
+    }
+  }
 
   String _formatDate(DateTime date) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    return DateFormat('MMM d, yyyy').format(date);
   }
 
   String _formatMonthYear(DateTime date) {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return '${months[date.month - 1]} ${date.year}';
+    return DateFormat('MMMM yyyy').format(date);
   }
 
   @override
@@ -60,7 +72,6 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
                 const SizedBox(height: 8),
                 _buildHeader(),
                 const SizedBox(height: 24),
-                
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -116,7 +127,6 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
           ],
         ),
         const SizedBox(height: 12),
-      
         Center(
           child: Container(
             width: MediaQuery.of(context).size.width * 0.5,
@@ -171,34 +181,41 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
         ),
         const SizedBox(height: 4),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.greyLight),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.location_on, color: AppColors.textSecondary, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _destination,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _destination,
+              isExpanded: true,
+              icon: Icon(Icons.arrow_drop_down, color: AppColors.secondary),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _destination = newValue!;
+                });
+              },
+              items: _destinations.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Row(
+                    children: [
+                      Icon(Icons.location_on, color: AppColors.accent, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-            ],
+                );
+              }).toList(),
+            ),
           ),
         ),
       ],
@@ -210,7 +227,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'From    To',
+          'From - To',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -249,7 +266,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(18),
@@ -261,11 +278,11 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                date != null ? _formatDate(date) : label, 
+                date != null ? _formatDate(date) : label,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: date != null ? AppColors.textPrimary : AppColors.textPrimary,
+                  color: date != null ? AppColors.textPrimary : AppColors.textSecondary,
                 ),
               ),
             ),
@@ -280,7 +297,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          _formatMonthYear(_currentMonth), 
+          _formatMonthYear(_currentMonth),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -309,31 +326,35 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
     final daysInMonth = lastDay.day;
     final startingWeekday = firstDay.weekday;
 
+    final today = DateTime.now();
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.greyLight),
       ),
       child: Column(
         children: [
           Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.accent,
-              border: Border(bottom: BorderSide(color: AppColors.greyLight)),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
             ),
             child: Row(
               children: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
                   .map((day) => Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            day,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.white,
-                              fontSize: 12,
-                            ),
+                        child: Text(
+                          day,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontSize: 12,
                           ),
                         ),
                       ))
@@ -345,106 +366,73 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 1.0,
+              childAspectRatio: 1.2,
             ),
             itemCount: 42,
             itemBuilder: (context, index) {
-              final dayOffset = index - startingWeekday + 1;
+              final dayOffset = index - (startingWeekday == 7 ? 0 : startingWeekday) + 1;
               final isCurrentMonth = dayOffset > 0 && dayOffset <= daysInMonth;
               final day = isCurrentMonth ? dayOffset : null;
-              final isToday = isCurrentMonth &&
-                  day == DateTime.now().day &&
-                  _currentMonth.month == DateTime.now().month &&
-                  _currentMonth.year == DateTime.now().year;
+
+              // Disable past days
+              bool isSelectable = false;
+              if (isCurrentMonth) {
+                if (_currentMonth.year > today.year ||
+                    (_currentMonth.year == today.year && _currentMonth.month > today.month) ||
+                    (_currentMonth.year == today.year &&
+                        _currentMonth.month == today.month &&
+                        day! >= today.day)) {
+                  isSelectable = true;
+                }
+              }
+
               final isSelected = isCurrentMonth &&
                   _selectedFromDate != null &&
                   day == _selectedFromDate!.day &&
                   _currentMonth.month == _selectedFromDate!.month &&
                   _currentMonth.year == _selectedFromDate!.year;
 
+              final isInRange = isCurrentMonth &&
+                  _selectedFromDate != null &&
+                  _selectedToDate != null &&
+                  day! >= _selectedFromDate!.day &&
+                  day <= _selectedToDate!.day &&
+                  _currentMonth.month == _selectedFromDate!.month &&
+                  _currentMonth.year == _selectedFromDate!.year;
+
               return GestureDetector(
-                onTap: isCurrentMonth ? () => _onDaySelected(day!) : null,
+                onTap: isSelectable ? () => _onDaySelected(day!) : null,
                 child: Container(
-                  margin: const EdgeInsets.all(6),
+                  margin: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accent.withOpacity(0.15) : AppColors.background,
+                    color: isSelected
+                        ? AppColors.accent
+                        : isInRange
+                            ? AppColors.accent.withOpacity(0.1)
+                            : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
-                    child: day != null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '$day',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                  color: isToday
-                                      ? AppColors.primary
-                                      : isSelected
-                                          ? AppColors.secondary
-                                          : AppColors.textPrimary,
-                                ),
-                              ),
-                              if (isToday)
-                                Container(
-                                  margin: const EdgeInsets.only(top: 4),
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                            ],
-                          )
-                        : const SizedBox(),
+                    child: Text(
+                      day != null ? '$day' : '',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelectable
+                            ? (isSelected
+                                ? Colors.white
+                                : isInRange
+                                    ? AppColors.accent
+                                    : AppColors.textPrimary)
+                            : Colors.grey.shade400,
+                      ),
+                    ),
                   ),
                 ),
               );
             },
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildNavigationButtons() {
-    return Center(
-      child: SizedBox(
-        width: 180,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: _selectedFromDate != null && _selectedToDate != null
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MyTripPage(),
-                    ),
-                  );
-                }
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _selectedFromDate != null && _selectedToDate != null
-                ? AppColors.secondary
-                : AppColors.greyLight,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-          child: Text(
-            'Next',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: _selectedFromDate != null && _selectedToDate != null
-                  ? AppColors.white
-                  : AppColors.textSecondary,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -460,37 +448,48 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
   }
 
   void _onDaySelected(int day) {
-    setState(() {
-      final selectedDate = DateTime(
-        _currentMonth.year,
-        _currentMonth.month,
-        day,
-      );
+    final selectedDate = DateTime(_currentMonth.year, _currentMonth.month, day);
+    final today = DateTime.now();
 
-      if (_selectedFromDate == null || _selectedToDate != null) {
+    if (selectedDate.isBefore(DateTime(today.year, today.month, today.day))) return;
+
+    setState(() {
+      if (_selectedFromDate == null) {
         _selectedFromDate = selectedDate;
         _selectedToDate = null;
-      } else if (selectedDate.isBefore(_selectedFromDate!)) {
-        _selectedToDate = _selectedFromDate;
-        _selectedFromDate = selectedDate;
+      } else if (_selectedToDate == null) {
+        if (selectedDate.isBefore(_selectedFromDate!)) {
+          _selectedToDate = _selectedFromDate;
+          _selectedFromDate = selectedDate;
+        } else {
+          _selectedToDate = selectedDate;
+        }
       } else {
-        _selectedToDate = selectedDate;
+        _selectedFromDate = selectedDate;
+        _selectedToDate = null;
       }
     });
   }
 
   Future<void> _selectDate({required bool isFromDate}) async {
+    final today = DateTime.now();
     final selected = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2025),
-      lastDate: DateTime(2027),
+      initialDate: isFromDate
+          ? (_selectedFromDate ?? today)
+          : (_selectedToDate ?? (_selectedFromDate ?? today)),
+      firstDate: today,
+      lastDate: DateTime(2026),
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
             primaryColor: AppColors.primary,
-            colorScheme: ColorScheme.light(primary: AppColors.primary),
-            buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1E3D58),
+            ),
+            buttonTheme: const ButtonThemeData(
+              textTheme: ButtonTextTheme.primary,
+            ),
           ),
           child: child!,
         );
@@ -509,5 +508,91 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
         }
       });
     }
+  }
+
+  Widget _buildNavigationButtons() {
+    return Center(
+      child: SizedBox(
+        width: 180,
+        height: 52,
+        child: ElevatedButton(
+          onPressed: _selectedFromDate != null && _selectedToDate != null
+              ? () async {
+                  _showLoadingDialog();
+                  try {
+                    final result = await TripService.saveTripRequest(
+                      destination: _destination,
+                      fromDate: _selectedFromDate!,
+                      toDate: _selectedToDate!,
+                    );
+                    if (mounted) {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MyTripPage(
+                            preferenceId: result['preference_id'],
+                            destination: _destination,
+                            fromDate: _selectedFromDate!,
+                            toDate: _selectedToDate!,
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      Navigator.pop(context);
+                      _showErrorDialog(e.toString());
+                    }
+                  }
+                }
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _selectedFromDate != null && _selectedToDate != null
+                ? AppColors.secondary
+                : AppColors.greyLight,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Text(
+            'Next',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _selectedFromDate != null && _selectedToDate != null
+                  ? Colors.white
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(error),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 }

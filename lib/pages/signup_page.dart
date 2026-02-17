@@ -1,9 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:rafiq/services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/auth.dart';
+import 'login_page.dart';
 
-class SignUpPage extends StatelessWidget {
+class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
+
+  @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
+  final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _signUp() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await AuthService.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        name: _nameController.text.trim(),
+      );
+
+      if (response.user != null && mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created! Please check your email for confirmation.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navigate to login page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +93,11 @@ class SignUpPage extends StatelessWidget {
                   top: baseTop,
                   left: sidePadding,
                   right: sidePadding,
-                  child: const AuthInputField(hint: 'Email', obscure: false),
+                  child: AuthInputField(
+                    hint: 'Email',
+                    obscure: false,
+                    controller: _emailController,
+                  ),
                 ),
 
                 // Name field
@@ -50,7 +105,11 @@ class SignUpPage extends StatelessWidget {
                   top: baseTop + 70,
                   left: sidePadding,
                   right: sidePadding,
-                  child: const AuthInputField(hint: 'Name', obscure: false),
+                  child: AuthInputField(
+                    hint: 'Name',
+                    obscure: false,
+                    controller: _nameController,
+                  ),
                 ),
 
                 // Password field
@@ -58,7 +117,11 @@ class SignUpPage extends StatelessWidget {
                   top: baseTop + 140,
                   left: sidePadding,
                   right: sidePadding,
-                  child: const AuthInputField(hint: 'Password', obscure: true),
+                  child: AuthInputField(
+                    hint: 'Password',
+                    obscure: true,
+                    controller: _passwordController,
+                  ),
                 ),
 
                 // Sign up button
@@ -71,23 +134,25 @@ class SignUpPage extends StatelessWidget {
                       width: 190,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(context, '/main');
-                        },
+                        onPressed: _isLoading ? null : _signUp,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(22),
                           ),
                         ),
-                        child: const Text(
-                          'Sign up',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Sign up',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -168,9 +233,11 @@ class SignUpPage extends StatelessWidget {
                   child: Center(
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.pushReplacementNamed(
+                        Navigator.pushReplacement(
                           context,
-                          '/login',
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
                         );
                       },
                       child: RichText(
