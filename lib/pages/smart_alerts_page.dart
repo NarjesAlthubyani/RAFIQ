@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../models/alert_model.dart';
+import '../widgets/alert_card.dart';
+import '../data/alert_repository.dart';
+
 
 class SmartAlertsPage extends StatelessWidget {
-  const SmartAlertsPage({super.key});
+   SmartAlertsPage({super.key});
+
+  
+
 
   @override
   Widget build(BuildContext context) {
+    final alerts = AlertRepository.getAlerts();
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -41,174 +50,23 @@ class SmartAlertsPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 30),
-                Container(
-                      padding: const EdgeInsets.all(16),
-                      margin: const EdgeInsets.only(bottom: 15),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
+              if (alerts.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 50),
+                      child: Text(
+                        "No alerts available",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
                         ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.cloud,
-                            color: AppColors.accent,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  "Heavy Rain Expected",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  "Moderate to heavy rainfall is forecasted for this afternoon.",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  "Today, 2:00 PM - 6:00 PM",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                       ),
                     ),
-
-
-
-                    Container(
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 15),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.grey.shade300,
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.traffic,
-                                color: AppColors.accent,
-                                size: 28,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: const [
-                                    Text(
-                                      "Traffic Jam on King Road",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      "Heavy traffic reported on King Road heading north. Expect delays of 20-30 minutes.",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      "Today, 2:00 PM - 6:00 PM",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 15),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.grey.shade300,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.event_busy,
-                              color: AppColors.accent,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text(
-                                    "Jeddah Beauty Show Cancelled",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 6),
-                                  Text(
-                                    "The show has been cancelled and postponed until tomorrow.",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  SizedBox(height: 6),
-                                  Text(
-                                    "Today, 2:00 PM - 6:00 PM",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-
-
+                  )
+                else
+                  ...alerts.map((alert) => AlertCard(alert: alert)).toList(),
             ],
+            
           ),
         ),
 
