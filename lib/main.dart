@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rafiq/pages/secrets.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Add this
 import 'package:rafiq/services/supabase_config.dart';
 import 'package:rafiq/pages/splash_screen.dart';
 import 'package:rafiq/theme/app_colors.dart';
@@ -7,7 +7,8 @@ import 'package:rafiq/theme/app_colors.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await Secrets.load();
+  // Load environment variables from .env file
+  await dotenv.load();
   
   await SupabaseConfig.initialize();
   

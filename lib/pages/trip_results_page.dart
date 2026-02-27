@@ -40,9 +40,9 @@ class _TripResultsPageState extends State<TripResultsPage> {
 
   @override
   void initState() {
-    super.initState();
-    _loadTripData();
-  }
+  super.initState();
+  _loadTripData();
+}
 
   @override
   void dispose() {
@@ -80,12 +80,14 @@ class _TripResultsPageState extends State<TripResultsPage> {
               print('ai_responses is a List with ${aiResponses.length} items');
               final firstItem = aiResponses.first;
               if (firstItem is Map) {
-                aiResponseMap = Map<String, dynamic>.from(firstItem);
+                // Fix: Properly cast to Map<String, dynamic>
+                aiResponseMap = Map<String, dynamic>.from(firstItem as Map);
                 print('Extracted first item from list');
               }
             } else if (aiResponses is Map) {
               print('ai_responses is a Map');
-              aiResponseMap = Map<String, dynamic>.from(aiResponses);
+              // Fix: Properly cast to Map<String, dynamic>
+              aiResponseMap = Map<String, dynamic>.from(aiResponses as Map);
             }
             
             // Now extract the full_response
@@ -108,40 +110,142 @@ class _TripResultsPageState extends State<TripResultsPage> {
                 }
               } else if (fullResponse is Map) {
                 print('Using Map directly');
-                responseData = Map<String, dynamic>.from(fullResponse);
+                // Fix: Properly cast to Map<String, dynamic>
+                responseData = Map<String, dynamic>.from(fullResponse as Map);
                 print('Response keys: ${responseData.keys}');
               }
               
               // Extract itinerary
               if (responseData.isNotEmpty) {
-                final itinerary = responseData['itinerary'];
-                print('itinerary type: ${itinerary.runtimeType}');
+                // Check if response has 'itinerary' field
+                dynamic itineraryData = responseData['itinerary'];
                 
-                List itineraryList = [];
-                
-                if (itinerary is List) {
-                  itineraryList = itinerary;
-                  print('Found itinerary list with ${itineraryList.length} days');
-                } else if (itinerary != null) {
-                  itineraryList = [itinerary];
-                  print('Found single itinerary item');
-                } else {
-                  print('No itinerary found in response');
+                // If no itinerary, check if it might be using a different key
+                if (itineraryData == null) {
+                  print('No "itinerary" key found, checking alternative keys...');
+                  // Try common alternative keys
+                  if (responseData.containsKey('days')) {
+                    itineraryData = responseData['days'];
+                    print('Using "days" instead of itinerary');
+                  } else if (responseData.containsKey('plan')) {
+                    itineraryData = responseData['plan'];
+                    print('Using "plan" instead of itinerary');
+                  } else if (responseData.containsKey('trip')) {
+                    itineraryData = responseData['trip'];
+                    print('Using "trip" instead of itinerary');
+                  }
                 }
                 
-                // Parse activities
+                print('itineraryData type: ${itineraryData.runtimeType}');
+                
+                List<dynamic> itineraryList = [];
+                
+                if (itineraryData is List) {
+                  itineraryList = itineraryData;
+                  print('Found itinerary list with ${itineraryList.length} days');
+                } else if (itineraryData != null) {
+                  // If it's a single day object, wrap it in a list
+                  itineraryList = [itineraryData];
+                  print('Found single itinerary item, wrapped in list');
+                } else {
+                  print('No itinerary data found in response');
+                  // Create a default itinerary
+                  itineraryList = [
+                    {
+                      'day': 1,
+                      'date': widget.fromDate.toIso8601String().split('T')[0],
+                      'activities': [
+                        {
+                          'title': 'Explore ${widget.destination}',
+                          'category': 'Culture',
+                          'description': 'Discover the beauty of ${widget.destination}',
+                          'location': 'City Center',
+                          'cost': 0,
+                          'duration': 4,
+                        }
+                      ]
+                    }
+                  ];
+                  print('Created default itinerary');
+                }
+                
+                // Parse activities from itinerary
                 if (itineraryList.isNotEmpty) {
                   List<Map<String, dynamic>> parsedActivities = _parseActivitiesFromAI(itineraryList);
                   
+                  // If no activities were parsed but we have itinerary days, create placeholder activities
+                  if (parsedActivities.isEmpty && itineraryList.isNotEmpty) {
+                    print('No activities parsed, creating placeholder activities from days');
+                    for (var dayData in itineraryList) {
+                      if (dayData is Map) {
+                        int dayNum = 1;
+                        if (dayData.containsKey('day')) {
+                          dayNum = dayData['day'] is int 
+                              ? (dayData['day'] as int) 
+                              : int.tryParse(dayData['day'].toString()) ?? 1;
+                        }
+                        
+                        // Try to extract activities if they exist in a different format
+                        if (dayData.containsKey('activities') && dayData['activities'] is List) {
+                          // Activities already exist, they'll be parsed in _parseActivitiesFromAI
+                          continue;
+                        } else {
+                          // Create a placeholder activity for this day
+                          parsedActivities.add({
+                            'day': dayNum,
+                            'title': 'Day $dayNum in ${widget.destination}',
+                            'category': 'General',
+                            'description': dayData['description']?.toString() ?? 'Explore ${widget.destination}',
+                            'location': widget.destination,
+                            'cost': 0.0,
+                            'duration': 4.0,
+                            'icon': Icons.place,
+                            'image': 'assets/${widget.destination.toLowerCase()}.jpg',
+                          });
+                        }
+                      }
+                    }
+                  }
+                  
+                  // Also try to extract meal recommendations if they exist
+                  if (responseData.containsKey('meals') || responseData.containsKey('restaurants')) {
+                    print('Found meal/restaurant recommendations to add');
+                    List<Map<String, dynamic>> mealActivities = _extractMealRecommendations(
+                      responseData, 
+                      itineraryList.length
+                    );
+                    parsedActivities.addAll(mealActivities);
+                  }
+                  
+                  // Fix: Create a new variable for sorted days
+                  List<int> sortedDaysList = [];
+                  
                   _safeSetState(() {
                     _allActivities = parsedActivities;
-                    _days = ['All', ...List.generate(itineraryList.length, (i) => 'Day ${i + 1}')];
-                    // Initialize all days as expanded
-                    _expandedDays = {for (var i = 1; i <= itineraryList.length; i++) i: false};
+                    
+                    // Determine unique days from parsed activities
+                    Set<int> uniqueDays = parsedActivities.map((a) => a['day'] as int).toSet();
+                    sortedDaysList = uniqueDays.toList()..sort();
+                    
+                    if (sortedDaysList.isEmpty && itineraryList.isNotEmpty) {
+                      // If no days from activities, use days from itinerary
+                      sortedDaysList = List.generate(itineraryList.length, (i) => i + 1);
+                    }
+                    
+                    _days = ['All', ...sortedDaysList.map((day) => 'Day $day')];
+                    
+                    // Initialize all days as collapsed (false)
+                    _expandedDays = {for (var day in sortedDaysList) day: false};
+                    
+                    // Auto-expand first day by default for better UX
+                    if (sortedDaysList.isNotEmpty) {
+                      _expandedDays[sortedDaysList.first] = true;
+                    }
+                    
                     _isLoading = false;
                   });
                   
-                  print('Final: Parsed ${parsedActivities.length} activities across ${itineraryList.length} days');
+                  print('Final: Parsed ${parsedActivities.length} activities across ${sortedDaysList.length} days');
                 } else {
                   print('No itinerary items to parse');
                   _safeSetState(() => _isLoading = false);
@@ -178,7 +282,106 @@ class _TripResultsPageState extends State<TripResultsPage> {
     }
   }
 
-  List<Map<String, dynamic>> _parseActivitiesFromAI(List itinerary) {
+  // Helper method to extract meal recommendations
+  List<Map<String, dynamic>> _extractMealRecommendations(
+    Map<String, dynamic> responseData, 
+    int numDays
+  ) {
+    List<Map<String, dynamic>> mealActivities = [];
+    
+    try {
+      // Check for meals array
+      if (responseData.containsKey('meals') && responseData['meals'] is List) {
+        final meals = responseData['meals'] as List;
+        for (var meal in meals) {
+          if (meal is Map) {
+            int dayNum = 1;
+            if (meal.containsKey('day')) {
+              dayNum = meal['day'] is int 
+                  ? (meal['day'] as int) 
+                  : int.tryParse(meal['day'].toString()) ?? 1;
+            }
+            
+            double cost = 0.0;
+            if (meal.containsKey('cost')) {
+              cost = meal['cost'] is num 
+                  ? (meal['cost'] as num).toDouble() 
+                  : double.tryParse(meal['cost'].toString()) ?? 0.0;
+            }
+            
+            mealActivities.add({
+              'day': dayNum,
+              'title': meal['name']?.toString() ?? 'Restaurant',
+              'category': 'Food',
+              'description': meal['description']?.toString() ?? 'Enjoy local cuisine',
+              'location': meal['location']?.toString() ?? widget.destination,
+              'cost': cost,
+              'duration': 1.5,
+              'icon': Icons.restaurant,
+              'image': 'assets/${widget.destination.toLowerCase()}.jpg',
+            });
+          }
+        }
+      }
+      
+      // Check for restaurants array
+      if (responseData.containsKey('restaurants') && responseData['restaurants'] is List) {
+        final restaurants = responseData['restaurants'] as List;
+        for (var restaurant in restaurants) {
+          if (restaurant is Map) {
+            int dayNum = 1;
+            if (restaurant.containsKey('day')) {
+              dayNum = restaurant['day'] is int 
+                  ? (restaurant['day'] as int) 
+                  : int.tryParse(restaurant['day'].toString()) ?? 1;
+            }
+            
+            double cost = 0.0;
+            if (restaurant.containsKey('cost')) {
+              cost = restaurant['cost'] is num 
+                  ? (restaurant['cost'] as num).toDouble() 
+                  : double.tryParse(restaurant['cost'].toString()) ?? 0.0;
+            }
+            
+            mealActivities.add({
+              'day': dayNum,
+              'title': restaurant['name']?.toString() ?? 'Restaurant',
+              'category': 'Food',
+              'description': restaurant['description']?.toString() ?? 'Dining experience',
+              'location': restaurant['location']?.toString() ?? widget.destination,
+              'cost': cost,
+              'duration': 1.5,
+              'icon': Icons.restaurant,
+              'image': 'assets/${widget.destination.toLowerCase()}.jpg',
+            });
+          }
+        }
+      }
+      
+      // If no structured meals, create placeholder meals for each day
+      if (mealActivities.isEmpty) {
+        for (int day = 1; day <= numDays; day++) {
+          mealActivities.add({
+            'day': day,
+            'title': 'Local Restaurant',
+            'category': 'Food',
+            'description': 'Enjoy authentic Saudi cuisine',
+            'location': widget.destination,
+            'cost': 150.0,
+            'duration': 1.5,
+            'icon': Icons.restaurant,
+            'image': 'assets/${widget.destination.toLowerCase()}.jpg',
+          });
+        }
+      }
+    } catch (e) {
+      print('Error extracting meal recommendations: $e');
+    }
+    
+    return mealActivities;
+  }
+
+  List<Map<String, dynamic>> _parseActivitiesFromAI(List<dynamic> itinerary) {
     List<Map<String, dynamic>> activities = [];
     
     try {
@@ -190,41 +393,73 @@ class _TripResultsPageState extends State<TripResultsPage> {
           continue;
         }
         
-        final day = dayData['day'] ?? 1;
-        final dayActivities = dayData['activities'];
+        int day = 1;
+        if (dayData.containsKey('day')) {
+          day = dayData['day'] is int 
+              ? (dayData['day'] as int) 
+              : int.tryParse(dayData['day'].toString()) ?? 1;
+        }
         
         print('Processing Day $day');
+        
+        // Try different possible keys for activities
+        dynamic dayActivities;
+        
+        if (dayData.containsKey('activities')) {
+          dayActivities = dayData['activities'];
+          print('  Found "activities" key');
+        } else if (dayData.containsKey('items')) {
+          dayActivities = dayData['items'];
+          print('  Found "items" key');
+        } else if (dayData.containsKey('schedule')) {
+          dayActivities = dayData['schedule'];
+          print('  Found "schedule" key');
+        } else if (dayData.containsKey('places')) {
+          dayActivities = dayData['places'];
+          print('  Found "places" key');
+        } else {
+          // If no activities array, treat the whole day as an activity
+          print('  No activities array found, creating default activity');
+          activities.add(_createActivityFromDayData(dayData, day));
+          continue;
+        }
+        
         print('  activities type: ${dayActivities.runtimeType}');
         
-        List activitiesList = [];
+        List<dynamic> activitiesList = [];
         if (dayActivities is List) {
           activitiesList = dayActivities;
-          print('Found ${activitiesList.length} activities in list');
+          print('  Found ${activitiesList.length} activities in list');
         } else if (dayActivities != null) {
           activitiesList = [dayActivities];
-          print('Found single activity (converted to list)');
+          print('  Found single activity (converted to list)');
         } else {
-          print('No activities found for day $day');
+          print('  No activities found for day $day, creating default');
+          activities.add(_createDefaultActivity(day));
           continue;
         }
         
         for (var activity in activitiesList) {
           if (activity is! Map) {
-            print('Activity is not a Map: ${activity.runtimeType}');
+            print('  Activity is not a Map: ${activity.runtimeType}');
             continue;
           }
           
-          print('  ➕ Adding activity: ${activity['title']}');
+          // Fix: Cast to Map<String, dynamic> for helper methods
+          Map<String, dynamic> typedActivity = Map<String, dynamic>.from(activity as Map);
+          
+          String title = _extractTitle(typedActivity);
+          print('  ➕ Adding activity: $title');
           
           activities.add({
-            'day': day is int ? day : int.tryParse(day.toString()) ?? 1,
-            'title': activity['title']?.toString() ?? 'Activity',
-            'category': activity['category']?.toString() ?? 'General',
-            'description': activity['description']?.toString() ?? '',
-            'location': activity['location']?.toString() ?? widget.destination,
-            'cost': activity['cost'] ?? 0,
-            'duration': activity['duration'] ?? 1,
-            'icon': _getCategoryIcon(activity['category']?.toString()),
+            'day': day,
+            'title': title,
+            'category': _extractCategory(typedActivity),
+            'description': _extractDescription(typedActivity),
+            'location': _extractLocation(typedActivity, dayData),
+            'cost': _extractCost(typedActivity),
+            'duration': _extractDuration(typedActivity),
+            'icon': _getCategoryIcon(_extractCategory(typedActivity)),
             'image': 'assets/${widget.destination.toLowerCase()}.jpg',
           });
         }
@@ -233,8 +468,150 @@ class _TripResultsPageState extends State<TripResultsPage> {
       print('Error parsing activities: $e');
     }
     
+    // If no activities were parsed, create default ones
+    if (activities.isEmpty && itinerary.isNotEmpty) {
+      print('No activities parsed, creating defaults for each day');
+      for (int i = 0; i < itinerary.length; i++) {
+        activities.add(_createDefaultActivity(i + 1));
+      }
+    }
+    
     print('Total parsed activities: ${activities.length}');
     return activities;
+  }
+
+  // Helper methods for parsing
+  String _extractTitle(Map<String, dynamic> activity) {
+    if (activity.containsKey('title') && activity['title'] != null) {
+      return activity['title'].toString();
+    }
+    if (activity.containsKey('name') && activity['name'] != null) {
+      return activity['name'].toString();
+    }
+    if (activity.containsKey('place') && activity['place'] != null) {
+      return activity['place'].toString();
+    }
+    return 'Activity';
+  }
+
+  String _extractCategory(Map<String, dynamic> activity) {
+    if (activity.containsKey('category') && activity['category'] != null) {
+      return activity['category'].toString();
+    }
+    if (activity.containsKey('type') && activity['type'] != null) {
+      return activity['type'].toString();
+    }
+    // Try to infer from title
+    String title = _extractTitle(activity).toLowerCase();
+    if (title.contains('restaurant') || title.contains('cafe') || title.contains('food')) {
+      return 'Food';
+    }
+    if (title.contains('museum') || title.contains('history')) {
+      return 'History';
+    }
+    if (title.contains('shop') || title.contains('market')) {
+      return 'Shopping';
+    }
+    return 'General';
+  }
+
+  String _extractDescription(Map<String, dynamic> activity) {
+    if (activity.containsKey('description') && activity['description'] != null) {
+      return activity['description'].toString();
+    }
+    if (activity.containsKey('details') && activity['details'] != null) {
+      return activity['details'].toString();
+    }
+    if (activity.containsKey('notes') && activity['notes'] != null) {
+      return activity['notes'].toString();
+    }
+    return '';
+  }
+
+  String _extractLocation(Map<String, dynamic> activity, Map<dynamic, dynamic> dayData) {
+    if (activity.containsKey('location') && activity['location'] != null) {
+      return activity['location'].toString();
+    }
+    if (activity.containsKey('place') && activity['place'] != null) {
+      return activity['place'].toString();
+    }
+    if (activity.containsKey('area') && activity['area'] != null) {
+      return activity['area'].toString();
+    }
+    if (dayData.containsKey('location') && dayData['location'] != null) {
+      return dayData['location'].toString();
+    }
+    return widget.destination;
+  }
+
+  double _extractCost(Map<String, dynamic> activity) {
+    if (activity.containsKey('cost') && activity['cost'] != null) {
+      return activity['cost'] is num 
+          ? (activity['cost'] as num).toDouble() 
+          : double.tryParse(activity['cost'].toString()) ?? 0.0;
+    }
+    if (activity.containsKey('price') && activity['price'] != null) {
+      return activity['price'] is num 
+          ? (activity['price'] as num).toDouble() 
+          : double.tryParse(activity['price'].toString()) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  double _extractDuration(Map<String, dynamic> activity) {
+    if (activity.containsKey('duration') && activity['duration'] != null) {
+      return activity['duration'] is num 
+          ? (activity['duration'] as num).toDouble() 
+          : double.tryParse(activity['duration'].toString()) ?? 1.0;
+    }
+    if (activity.containsKey('hours') && activity['hours'] != null) {
+      return activity['hours'] is num 
+          ? (activity['hours'] as num).toDouble() 
+          : double.tryParse(activity['hours'].toString()) ?? 1.0;
+    }
+    return 1.0;
+  }
+
+  Map<String, dynamic> _createActivityFromDayData(Map<dynamic, dynamic> dayData, int day) {
+    double cost = 0.0;
+    if (dayData.containsKey('cost')) {
+      cost = dayData['cost'] is num 
+          ? (dayData['cost'] as num).toDouble() 
+          : double.tryParse(dayData['cost'].toString()) ?? 0.0;
+    }
+    
+    double duration = 4.0;
+    if (dayData.containsKey('duration')) {
+      duration = dayData['duration'] is num 
+          ? (dayData['duration'] as num).toDouble() 
+          : double.tryParse(dayData['duration'].toString()) ?? 4.0;
+    }
+    
+    return {
+      'day': day,
+      'title': dayData['title']?.toString() ?? 'Day $day in ${widget.destination}',
+      'category': dayData['category']?.toString() ?? 'General',
+      'description': dayData['description']?.toString() ?? 'Explore ${widget.destination}',
+      'location': dayData['location']?.toString() ?? widget.destination,
+      'cost': cost,
+      'duration': duration,
+      'icon': Icons.place,
+      'image': 'assets/${widget.destination.toLowerCase()}.jpg',
+    };
+  }
+
+  Map<String, dynamic> _createDefaultActivity(int day) {
+    return {
+      'day': day,
+      'title': 'Day $day in ${widget.destination}',
+      'category': 'General',
+      'description': 'Explore and enjoy ${widget.destination}',
+      'location': widget.destination,
+      'cost': 0.0,
+      'duration': 4.0,
+      'icon': Icons.place,
+      'image': 'assets/${widget.destination.toLowerCase()}.jpg',
+    };
   }
 
   IconData _getCategoryIcon(String? category) {
@@ -368,7 +745,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                             int? expandedDay = _expandedDays.entries
                                 .firstWhere(
                                   (e) => e.value == true,
-                                  orElse: () => MapEntry(1, false),
+                                  orElse: () => const MapEntry(1, false),
                                 )
                                 .key;
                             if (_expandedDays[expandedDay] == true) {

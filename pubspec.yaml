@@ -50,6 +50,8 @@ dependencies:
   http: ^1.1.0
   google_generative_ai: ^0.4.0
   image_picker: ^1.0.7
+  open_route_service: ^1.2.7
+  
 
 dev_dependencies:
   flutter_test:

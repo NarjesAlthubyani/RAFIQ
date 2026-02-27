@@ -27,16 +27,7 @@ class _MyTripPageState extends State<MyTripPage> {
   late DateTime _fromDate;
   late DateTime _toDate;
 
-  final List<Interest> _interests = [
-    Interest(name: 'Culture', isSelected: false),
-    Interest(name: 'Food', isSelected: false),
-    Interest(name: 'History', isSelected: false),
-    Interest(name: 'Shopping', isSelected: false),
-    Interest(name: 'Entertainment', isSelected: false),
-    Interest(name: 'Adventure', isSelected: false),
-    Interest(name: 'Relaxation', isSelected: false),
-    Interest(name: 'Nature', isSelected: false),
-  ];
+  List<Interest> _interests = [];
 
   String? _selectedBudgetRange = '2000 - 5000';
   final List<String> _budgetOptions = [
@@ -54,6 +45,34 @@ class _MyTripPageState extends State<MyTripPage> {
     _destination = widget.destination;
     _fromDate = widget.fromDate;
     _toDate = widget.toDate;
+    
+    _initializeInterests();
+  }
+
+  void _initializeInterests() {
+    // Base interests for all cities
+    List<Interest> baseInterests = [
+      Interest(name: 'Culture', isSelected: false),
+      Interest(name: 'Food', isSelected: false),
+      Interest(name: 'History', isSelected: false),
+      Interest(name: 'Entertainment', isSelected: false),
+      Interest(name: 'Adventure', isSelected: false),
+      Interest(name: 'Relaxation', isSelected: false),
+      Interest(name: 'Nature', isSelected: false),
+    ];
+
+    // Add Shopping ONLY if destination is NOT AlUla
+    if (_destination != 'AlUla') {
+      baseInterests.insert(3, Interest(name: 'Shopping', isSelected: false));
+    }
+
+    setState(() {
+      _interests = baseInterests;
+    });
+  }
+
+  bool get _hasShopping {
+    return _interests.any((interest) => interest.name == 'Shopping');
   }
 
   @override
@@ -181,49 +200,59 @@ class _MyTripPageState extends State<MyTripPage> {
             ),
           ),
           const SizedBox(height: 18),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: List.generate(_interests.length, (index) {
-              final interest = _interests[index];
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _interests[index] = interest.copyWith(
-                      isSelected: !interest.isSelected,
+          _interests.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      'Loading interests...',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
+                )
+              : Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: List.generate(_interests.length, (index) {
+                    final interest = _interests[index];
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _interests[index] = interest.copyWith(
+                            isSelected: !interest.isSelected,
+                          );
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: interest.isSelected
+                              ? AppColors.accent.withOpacity(0.08)
+                              : AppColors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.accent,
+                            width: 1.6,
+                          ),
+                        ),
+                        child: Text(
+                          interest.name,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: interest.isSelected
+                                ? AppColors.secondary
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     );
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: interest.isSelected
-                        ? AppColors.accent.withOpacity(0.08)
-                        : AppColors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.accent,
-                      width: 1.6,
-                    ),
-                  ),
-                  child: Text(
-                    interest.name,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: interest.isSelected
-                          ? AppColors.secondary
-                          : AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
+                  }),
+                ),     
         ],
       ),
     );
@@ -270,7 +299,7 @@ class _MyTripPageState extends State<MyTripPage> {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(
-                      '\SAR $value',
+                      'SAR $value',
                       style: TextStyle(
                         fontSize: 16,
                         color: AppColors.textPrimary,
@@ -407,7 +436,6 @@ class _MyTripPageState extends State<MyTripPage> {
           ElevatedButton(
   onPressed: () async {
     try {
-      
       final result = await TripService.saveTripDetails(
         preferenceId: _preferenceId,
         budgetRange: _selectedBudgetRange!,
@@ -416,6 +444,7 @@ class _MyTripPageState extends State<MyTripPage> {
 
       if (!mounted) return;
 
+      // Navigate to loading page with the result
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -435,21 +464,20 @@ class _MyTripPageState extends State<MyTripPage> {
       }
     }
   },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: AppColors.secondary,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-  ),
-  child: Text(
-    'Create Trip Plan',
-    style: TextStyle(
-      color: AppColors.white,
-      fontWeight: FontWeight.w600,
-    ),
-  ),
-),
-
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Create Trip Plan',
+              style: TextStyle(
+                color: AppColors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
