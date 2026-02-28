@@ -32,7 +32,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
     try {
       final trips = await TripService.getUserTrips();
 
-      if (!mounted) return; // Safe check
+      if (!mounted) return; 
 
       setState(() {
         _trips = trips;
@@ -68,7 +68,6 @@ class _MyTripsPageState extends State<MyTripsPage> {
     if (value >= 1000) {
       return '${(value / 1000).toStringAsFixed(1)}k';
     }
-
     return value.toStringAsFixed(0);
   }
 
@@ -109,7 +108,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
+                              color: AppColors.black.withOpacity(0.12),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -117,7 +116,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                         ),
                         child: const Icon(
                           Icons.add,
-                          color: Colors.white,
+                          color: AppColors.white,
                           size: 28,
                         ),
                       ),
@@ -139,14 +138,14 @@ class _MyTripsPageState extends State<MyTripsPage> {
                       Icon(
                         Icons.error_outline,
                         size: 48,
-                        color: Colors.grey.shade400,
+                        color: AppColors.greyDark,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         _errorMessage!,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey.shade600,
+                          color: AppColors.greyDark,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -174,7 +173,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                       Icon(
                         Icons.map_outlined,
                         size: 80,
-                        color: Colors.grey.shade400,
+                        color:AppColors.greyDark,
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -182,7 +181,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
+                          color: AppColors.greyDark,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -190,7 +189,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                         'Start planning your next adventure',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey.shade500,
+                          color: AppColors.greyDark,
                         ),
                       ),
                       const SizedBox(height: 22),
@@ -270,11 +269,11 @@ class _MyTripsPageState extends State<MyTripsPage> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: AppColors.black.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -317,7 +316,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: AppColors.white,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -325,12 +324,12 @@ class _MyTripsPageState extends State<MyTripsPage> {
                           children: [
                             const Padding(
                               padding: EdgeInsets.only(left: 2),
-                              child: Icon(Icons.attach_money, color: Colors.white, size: 16),
+                              child: Icon(Icons.attach_money, color: AppColors.white, size: 16),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${_formatBudget(trip['budget'])} SAR',
-                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              style: const TextStyle(color: AppColors.white, fontSize: 14),
                             ),
                           ],
                         ),
@@ -338,7 +337,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                           children: [
                             const Padding(
                               padding: EdgeInsets.only(left: 2),
-                              child: Icon(Icons.calendar_today, color: Colors.white, size: 14),
+                              child: Icon(Icons.calendar_today, color: AppColors.white, size: 14),
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -352,13 +351,13 @@ class _MyTripsPageState extends State<MyTripsPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: AppColors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               'Total: ${_formatBudget(aiResponse['total_cost'])} SAR',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -372,7 +371,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                     onTap: () => _showTripOptions(context, trip),
                     child: Container(
                       padding: const EdgeInsets.all(8),
-                      child: const Icon(Icons.more_horiz, color: Colors.white, size: 28),
+                      child: const Icon(Icons.more_horiz, color: AppColors.white, size: 28),
                     ),
                   ),
                 ],
@@ -397,10 +396,10 @@ class _MyTripsPageState extends State<MyTripsPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                leading: const Icon(Icons.delete_outline, color: AppColors.primary),
                 title: const Text(
                   'Delete trip',
-                  style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(color:Colors.red, fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -439,7 +438,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                 try {
                   final success = await TripService.deleteTrip(trip['trip_id']);
 
-                  if (!mounted) return; // Important check
+                  if (!mounted) return; 
 
                   if (success) {
                     setState(() {
@@ -449,7 +448,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Trip deleted successfully'),
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.secondary,
                       ),
                     );
                   } else {
@@ -466,12 +465,12 @@ class _MyTripsPageState extends State<MyTripsPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: ${e.toString()}'),
-                      backgroundColor: Colors.red,
+                      backgroundColor:Colors.red,
                     ),
                   );
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+              child: const Text('Delete', style: TextStyle(color: AppColors.white)),
             ),
           ],
         );

@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rafiq/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:math'; // ✅ ADD THIS for sin, cos, sqrt, atan2
+import 'dart:math'; 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final supabase = Supabase.instance.client;
@@ -18,10 +18,9 @@ class TripService {
     required double destLat,
     required double destLng,
   }) async {
-    // If coordinates are missing, return default based on city
     if (originLat == 0 || originLng == 0 || destLat == 0 || destLng == 0) {
       print('⚠️ Missing coordinates, using default 30 min');
-      return 30; // Default 30 minutes
+      return 30; 
     }
 
     try {
@@ -37,7 +36,7 @@ class TripService {
         },
         body: jsonEncode({
           'coordinates': [
-            [originLng, originLat], // Note: OpenRouteService uses [lng, lat] order!
+            [originLng, originLat], 
             [destLng, destLat]
           ]
         }),
@@ -45,8 +44,6 @@ class TripService {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
-        // Extract duration from response
         if (data['features'] != null && 
             data['features'].isNotEmpty &&
             data['features'][0]['properties'] != null &&
@@ -65,8 +62,6 @@ class TripService {
     } catch (e) {
       print('❌ OpenRouteService error: $e');
     }
-    
-    // Fallback to distance-based estimation if API fails
     return _estimateTravelTimeByDistance(originLat, originLng, destLat, destLng);
   }
 
@@ -74,13 +69,11 @@ class TripService {
   static int _estimateTravelTimeByDistance(
     double lat1, double lon1, double lat2, double lon2
   ) {
-    // Calculate approximate distance using Haversine formula
-    const double R = 6371; // Earth's radius in km
+    const double R = 6371; 
     
     double dLat = _toRadians(lat2 - lat1);
     double dLon = _toRadians(lon2 - lon1);
     
-    // ✅ FIXED: Use math functions with 'dart:math' import
     double a = pow(sin(dLat / 2), 2) +
               cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * 
               pow(sin(dLon / 2), 2);
@@ -88,21 +81,20 @@ class TripService {
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
     
     double distanceInKm = R * c;
-    
-    // Assume average speed based on distance
-    int speedKmPerHour = distanceInKm > 50 ? 80 : // Highway
-                        distanceInKm > 20 ? 60 :  // Main roads
-                        40; // City streets
+   
+    int speedKmPerHour = distanceInKm > 50 ? 80 : 
+                        distanceInKm > 20 ? 60 :  
+                        40; 
     
     int minutes = (distanceInKm / speedKmPerHour * 60).round();
-    minutes = minutes.clamp(5, 180); // Between 5 minutes and 3 hours
+    minutes = minutes.clamp(5, 180); 
     
     print('🚗 Estimated travel time (fallback): $minutes minutes (distance: ${distanceInKm.toStringAsFixed(1)} km)');
     return minutes;
   }
 
   static double _toRadians(double degree) {
-    return degree * pi / 180; // ✅ FIXED: Use pi from 'dart:math'
+    return degree * pi / 180; 
   }
 
   // ================= GET COORDINATES FROM PLACE NAME =================
@@ -122,8 +114,7 @@ class TripService {
           'lng': (places['lng'] as num).toDouble(),
         };
       }
-      
-      // If not found, try food venues
+
       final food = await supabase
           .from('food_venues')
           .select('lat, lng')
@@ -219,7 +210,7 @@ class TripService {
   static String _formatPlacesForPrompt(List<Map<String, dynamic>> places) {
     String result = "";
     
-    for (var place in places.take(30)) { // Limit to 30 to avoid token limits
+    for (var place in places.take(30)) { 
       result += "- ${place['name']}\n";
       result += "  Category: ${place['category']}\n";
       result += "  Duration: ${place['duration_minutes'] ?? 90} minutes\n";
@@ -229,7 +220,6 @@ class TripService {
       }
       result += "\n";
     }
-    
     return result;
   }
 
@@ -237,7 +227,7 @@ class TripService {
   static String _formatFoodForPrompt(List<Map<String, dynamic>> foodVenues) {
     String result = "";
     
-    for (var venue in foodVenues.take(30)) { // Limit to 30
+    for (var venue in foodVenues.take(30)) { 
       result += "- ${venue['name']} (${venue['category']})\n";
       result += "  Price level: ${venue['price_level']}\n";
       if (venue['best_time_of_day'] != null) {
@@ -272,27 +262,22 @@ class TripService {
         continue;
       }
       
-      // Check number of activities
       if (activities.length > 5) {
         issues.add('Day ${dayIndex + 1} has ${activities.length} activities (max 5)');
         isValid = false;
       }
       
-      // Calculate total duration with travel time
       int totalMinutes = 0;
       
       for (int i = 0; i < activities.length; i++) {
         var activity = activities[i];
         
-        // Get duration from activity (default 90 min)
         int duration = activity['duration'] ?? 90;
         totalMinutes += duration;
-        
-        // Add travel time to next activity (except last)
+      
         if (i < activities.length - 1) {
           var nextActivity = activities[i + 1];
           
-          // Get coordinates for current and next activity
           var currentCoords = await getCoordinatesFromPlace(
             activity['title'] ?? activity['venue_name'] ?? '',
             city,
@@ -302,8 +287,8 @@ class TripService {
             nextActivity['title'] ?? nextActivity['venue_name'] ?? '',
             city,
           );
-          
-          int travelTime = 30; // Default
+      
+          int travelTime = 30; 
           
           if (currentCoords['lat'] != 0 && nextCoords['lat'] != 0) {
             travelTime = await getTravelTime(
@@ -318,7 +303,6 @@ class TripService {
         }
       }
       
-      // Max 10 hours of activities per day (600 minutes)
       if (totalMinutes > 600) {
         issues.add('Day ${dayIndex + 1} too long: ${(totalMinutes / 60).round()} hours');
         isValid = false;
@@ -425,7 +409,6 @@ class TripService {
         final data = jsonDecode(response.body);
         final aiText = data['candidates'][0]['content']['parts'][0]['text'];
         
-        // Extract JSON from response
         final startIndex = aiText.indexOf('{');
         final endIndex = aiText.lastIndexOf('}') + 1;
         
@@ -439,7 +422,6 @@ class TripService {
     } catch (e) {
       print('❌ Gemini API error: $e');
     }
-    
     throw Exception('Failed to generate AI plan');
   }
 
@@ -460,7 +442,6 @@ class TripService {
       print('🎯 Generation attempt $attempt of $maxAttempts');
       
       try {
-        // Generate plan with AI
         var plan = await _callGeminiWithPrompt(
           city: city,
           fromDate: fromDate,
@@ -470,8 +451,7 @@ class TripService {
           places: places,
           foodVenues: foodVenues,
         );
-        
-        // Validate the plan
+       
         final validation = await validateItinerary(plan, city);
         
         if (validation['isValid'] == true) {
@@ -480,7 +460,6 @@ class TripService {
         } else {
           print('⚠️ Validation failed: ${validation['issues']}');
           
-          // If last attempt, return with warning
           if (attempt == maxAttempts) {
             print('⚠️ Using best effort plan after $maxAttempts attempts');
             return plan;
@@ -491,7 +470,6 @@ class TripService {
       }
     }
     
-    // Create fallback plan if all attempts fail
     return _createFallbackPlan(city, fromDate, toDate, places, foodVenues);
   }
 
@@ -506,7 +484,6 @@ class TripService {
     final days = toDate.difference(fromDate).inDays;
     List<Map<String, dynamic>> itinerary = [];
     
-    // Get sample places
     final samplePlaces = places.take(6).toList();
     final restaurants = foodVenues.where((v) => 
       v['category']?.toString().toLowerCase() == 'restaurant').take(4).toList();
@@ -518,7 +495,6 @@ class TripService {
       List<Map<String, dynamic>> activities = [];
       final currentDate = fromDate.add(Duration(days: i - 1));
       
-      // Morning activity (History/Culture)
       if (samplePlaces.isNotEmpty) {
         final place = samplePlaces[(i - 1) % samplePlaces.length];
         activities.add({
@@ -531,7 +507,6 @@ class TripService {
         });
       }
       
-      // Lunch
       if (restaurants.isNotEmpty) {
         final restaurant = restaurants[i % restaurants.length];
         activities.add({
@@ -545,7 +520,6 @@ class TripService {
         });
       }
       
-      // Afternoon activity (Nature/Adventure)
       if (samplePlaces.length > 1) {
         final place = samplePlaces[(i + 1) % samplePlaces.length];
         activities.add({
@@ -558,7 +532,6 @@ class TripService {
         });
       }
       
-      // Dinner
       if (restaurants.length > 1) {
         final restaurant = restaurants[(i + 2) % restaurants.length];
         activities.add({
@@ -572,7 +545,6 @@ class TripService {
         });
       }
       
-      // Evening coffee
       if (cafes.isNotEmpty) {
         final cafe = cafes[i % cafes.length];
         activities.add({
@@ -593,7 +565,6 @@ class TripService {
       });
     }
     
-    // Calculate total cost
     double totalCost = 0;
     for (var day in itinerary) {
       for (var activity in day['activities']) {
@@ -676,20 +647,17 @@ class TripService {
 
     final double budget = _parseBudget(budgetRange);
 
-    // Update preferences with budget
     await supabase
         .from('preferences')
         .update({'budget': budget})
         .eq('preference_id', preferenceId);
 
-    // Save interests
     await supabase.from('interests').insert({
       'user_id': user.id,
       'preference_id': preferenceId,
       'selected_interests': selectedInterests,
     });
 
-    // Get preference details
     final preferenceRaw = await supabase
         .from('preferences')
         .select()
@@ -701,7 +669,6 @@ class TripService {
     final fromDate = DateTime.parse(preference['start_date']);
     final toDate = DateTime.parse(preference['end_date']);
 
-    // Create trip plan record
     final tripRaw = await supabase
         .from('trip_plans')
         .insert({
@@ -826,7 +793,6 @@ static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
   try {
     print('🔍 Fetching trip details for ID: $tripId');
     
-    // First get the trip plan
     final tripResponse = await supabase
         .from('trip_plans')
         .select('''
@@ -843,24 +809,21 @@ static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
 
     print('✅ Trip details fetched successfully');
     
-    // Get ALL ai_responses for this trip (there might be multiple)
     final aiResponses = await supabase
         .from('ai_responses')
         .select('*')
         .eq('trip_id', tripId)
-        .order('created_at', ascending: false); // Get newest first
+        .order('created_at', ascending: false); 
     
     print('📊 Found ${aiResponses.length} AI responses for this trip');
-    
-    // Add ai_responses to the trip data
+   
     Map<String, dynamic> tripData = Map<String, dynamic>.from(tripResponse);
     tripData['ai_responses'] = aiResponses;
     
-    // Get the preference_id from the response
     final preferenceId = tripData['preference_id'];
     
     if (preferenceId != null) {
-      // Fetch interests separately using preference_id
+      
       final interestsResponse = await supabase
           .from('interests')
           .select('selected_interests')
@@ -962,7 +925,6 @@ static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
       final max = double.tryParse(parts[1]) ?? 0.0;
       return (min + max) / 2;
     }
-
     return double.tryParse(budgetRange) ?? 0.0;
   }
 }

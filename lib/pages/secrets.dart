@@ -11,7 +11,6 @@ class Secrets {
   static String get supabaseAnonKey => 
       dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   
-  // ✅ ADD THIS
   static String get geminiApiKey => 
       dotenv.env['GEMINI_API_KEY'] ?? '';
 }

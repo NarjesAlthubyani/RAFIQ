@@ -275,14 +275,13 @@ class _TripResultsPageState extends State<TripResultsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading trip: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor:AppColors.primary,
           ),
         );
       }
     }
   }
 
-  // Helper method to extract meal recommendations
   List<Map<String, dynamic>> _extractMealRecommendations(
     Map<String, dynamic> responseData, 
     int numDays
@@ -290,7 +289,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
     List<Map<String, dynamic>> mealActivities = [];
     
     try {
-      // Check for meals array
       if (responseData.containsKey('meals') && responseData['meals'] is List) {
         final meals = responseData['meals'] as List;
         for (var meal in meals) {
@@ -324,7 +322,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
         }
       }
       
-      // Check for restaurants array
       if (responseData.containsKey('restaurants') && responseData['restaurants'] is List) {
         final restaurants = responseData['restaurants'] as List;
         for (var restaurant in restaurants) {
@@ -358,7 +355,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
         }
       }
       
-      // If no structured meals, create placeholder meals for each day
       if (mealActivities.isEmpty) {
         for (int day = 1; day <= numDays; day++) {
           mealActivities.add({
@@ -401,8 +397,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
         }
         
         print('Processing Day $day');
-        
-        // Try different possible keys for activities
         dynamic dayActivities;
         
         if (dayData.containsKey('activities')) {
@@ -418,7 +412,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
           dayActivities = dayData['places'];
           print('  Found "places" key');
         } else {
-          // If no activities array, treat the whole day as an activity
+
           print('  No activities array found, creating default activity');
           activities.add(_createActivityFromDayData(dayData, day));
           continue;
@@ -445,7 +439,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
             continue;
           }
           
-          // Fix: Cast to Map<String, dynamic> for helper methods
           Map<String, dynamic> typedActivity = Map<String, dynamic>.from(activity as Map);
           
           String title = _extractTitle(typedActivity);
@@ -468,7 +461,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
       print('Error parsing activities: $e');
     }
     
-    // If no activities were parsed, create default ones
     if (activities.isEmpty && itinerary.isNotEmpty) {
       print('No activities parsed, creating defaults for each day');
       for (int i = 0; i < itinerary.length; i++) {
@@ -480,7 +472,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
     return activities;
   }
 
-  // Helper methods for parsing
   String _extractTitle(Map<String, dynamic> activity) {
     if (activity.containsKey('title') && activity['title'] != null) {
       return activity['title'].toString();
@@ -501,7 +492,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
     if (activity.containsKey('type') && activity['type'] != null) {
       return activity['type'].toString();
     }
-    // Try to infer from title
     String title = _extractTitle(activity).toLowerCase();
     if (title.contains('restaurant') || title.contains('cafe') || title.contains('food')) {
       return 'Food';
@@ -646,7 +636,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Trip saved successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.accent,
             ),
           );
         } else {
@@ -703,7 +693,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
     bool hasExpandedDay = _expandedDays.values.any((isExpanded) => isExpanded);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       body: _isLoading
           ? Center(
               child: Column(
@@ -735,7 +725,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
                       ],
                     ),
                     
-                    // Add Activity FAB (only shown when a day is expanded)
                     if (hasExpandedDay)
                       Positioned(
                         left: 24,
@@ -773,7 +762,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                               children: [
                                 const Icon(
                                   Icons.add,
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   size: 24,
                                 ),
                                 const SizedBox(width: 8),
@@ -782,7 +771,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: AppColors.white,
                                   ),
                                 ),
                               ],
@@ -804,7 +793,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image
           Image.asset(
             'assets/${widget.destination.toLowerCase()}.jpg',
             fit: BoxFit.cover,
@@ -827,8 +815,8 @@ class _TripResultsPageState extends State<TripResultsPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.6),
+                  AppColors.black.withOpacity(0.2),
+                  AppColors.black.withOpacity(0.6),
                 ],
               ),
             ),
@@ -847,7 +835,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                     style: const TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppColors.white,
                       letterSpacing: -0.5,
                       height: 1.1,
                     ),
@@ -867,7 +855,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                               children: [
                                 const Icon(
                                   Icons.attach_money,
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   size: 18,
                                 ),
                                 const SizedBox(width: 4),
@@ -876,7 +864,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: AppColors.white,
                                   ),
                                 ),
                               ],
@@ -897,7 +885,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                               children: [
                                 const Icon(
                                   Icons.calendar_today,
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   size: 16,
                                 ),
                                 const SizedBox(width: 6),
@@ -906,7 +894,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                    color: AppColors.white,
                                   ),
                                 ),
                               ],
@@ -921,7 +909,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
             ),
           ),
           
-          // Top Navigation Bar
           Positioned(
             top: MediaQuery.of(context).padding.top + 12,
             left: 16,
@@ -929,7 +916,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Back Button
                 GestureDetector(
                   onTap: () {
                     if (!_isDisposed && mounted) {
@@ -946,16 +932,14 @@ class _TripResultsPageState extends State<TripResultsPage> {
                     padding: const EdgeInsets.only(bottom: 40),
                     child: const Icon(
                       Icons.arrow_back,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 32,
                     ),
                   ),
                 ),
                 
-                // Save and Menu Buttons
                 Row(
                   children: [
-                    // Three Dots Menu
                     GestureDetector(
                       onTap: () {
                         if (!_isDisposed && mounted) {
@@ -966,7 +950,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                         padding: const EdgeInsets.only(bottom: 40),
                         child: const Icon(
                           Icons.more_horiz,
-                          color: Colors.white,
+                          color: AppColors.white,
                           size: 32,
                         ),
                       ),
@@ -986,7 +970,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         border: Border(
           bottom: BorderSide(
             color: Colors.grey.shade200,
@@ -997,7 +981,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Day Tabs
           Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
@@ -1023,10 +1006,10 @@ class _TripResultsPageState extends State<TripResultsPage> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : Colors.white,
+                      color: isSelected ? AppColors.primary : AppColors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                        color: isSelected ? AppColors.primary :Colors.grey.shade300,
                         width: 1.5,
                       ),
                     ),
@@ -1036,7 +1019,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: isSelected ? Colors.white : Colors.grey.shade700,
+                          color: isSelected ? AppColors.white :Colors.grey.shade700,
                         ),
                       ),
                     ),
@@ -1046,20 +1029,19 @@ class _TripResultsPageState extends State<TripResultsPage> {
             ),
           ),
           
-          // Plus Button for adding new day
           Container(
             width: 40,
             height: 40,
             margin: const EdgeInsets.only(left: 8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color:Colors.grey.shade100,
               borderRadius: BorderRadius.circular(20),
             ),
             child: IconButton(
               onPressed: _addNewDay,
               icon: Icon(
                 Icons.add,
-                color: Colors.grey.shade600,
+                color:Colors.grey.shade600,
                 size: 20,
               ),
               padding: EdgeInsets.zero,
@@ -1092,7 +1074,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Day Header (click to expand/collapse)
             GestureDetector(
               onTap: () {
                 if (!_isDisposed && mounted) {
@@ -1124,7 +1105,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
               ),
             ),
             
-            // Activities for this day (shown when expanded)
             if (isExpanded && dayActivities.isNotEmpty) ...[
               const SizedBox(height: 16),
               Column(
@@ -1145,7 +1125,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
               ),
             ],
             
-            // Divider between days (except last)
             if (index < daysToShow.length - 1)
               Container(
                 height: 1,
@@ -1162,15 +1141,15 @@ class _TripResultsPageState extends State<TripResultsPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.shade200,
+          color:Colors.grey.shade200,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1179,7 +1158,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image Section
           Stack(
             children: [
               Container(
@@ -1197,7 +1175,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
                 ),
               ),
               
-              // Three Dots Menu
               Positioned(
                 top: 12,
                 right: 12,
@@ -1213,7 +1190,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                     },
                     child: const Icon(
                       Icons.more_horiz,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 34,
                     ),
                   ),
@@ -1222,7 +1199,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
             ],
           ),
           
-          // Info Section
           Container(
             decoration: BoxDecoration(
               color: AppColors.accent,
@@ -1236,7 +1212,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Left side - Title and Category
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1246,7 +1221,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -1254,7 +1229,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                         children: [
                           Icon(
                             activity['icon'] ?? Icons.place,
-                            color: Colors.white,
+                            color: AppColors.white,
                             size: 18,
                           ),
                           const SizedBox(width: 8),
@@ -1262,7 +1237,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                             activity['category'] ?? 'General',
                             style: const TextStyle(
                               fontSize: 14,
-                              color: Colors.white,
+                              color: AppColors.white,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1274,7 +1249,6 @@ class _TripResultsPageState extends State<TripResultsPage> {
                 
                 const SizedBox(width: 12),
                 
-                // View on Map Button
                 OutlinedButton.icon(
                   onPressed: () {
                     _viewOnMap(activity);
@@ -1282,9 +1256,9 @@ class _TripResultsPageState extends State<TripResultsPage> {
                   icon: const Icon(Icons.location_on, size: 16),
                   label: const Text('View on map'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     backgroundColor: AppColors.primary,
-                    side: const BorderSide(color: Colors.white, width: 0.5),
+                    side: const BorderSide(color: AppColors.white, width: 0.5),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -1310,7 +1284,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
           Icon(
             Icons.map_outlined,
             size: 80,
-            color: Colors.grey.shade400,
+            color:Colors.grey.shade400,
           ),
           const SizedBox(height: 16),
           Text(
@@ -1374,7 +1348,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
               ),
               child: const Text(
                 'Add',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.white),
               ),
             ),
           ],
@@ -1524,7 +1498,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Trip deleted successfully'),
-                            backgroundColor: Colors.green,
+                            backgroundColor: AppColors.secondary,
                           ),
                         );
                         
@@ -1560,7 +1534,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                 ),
                 child: const Text(
                   'Delete',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: AppColors.white),
                 ),
               ),
             ],
@@ -1596,7 +1570,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Activity deleted'),
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.secondary,
                       ),
                     );
                   }
@@ -1606,7 +1580,7 @@ class _TripResultsPageState extends State<TripResultsPage> {
                 ),
                 child: const Text(
                   'Delete',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: AppColors.white),
                 ),
               ),
             ],

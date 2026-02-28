@@ -22,7 +22,6 @@ class AuthService {
     );
 
     if (response.user != null) {
-      // Create user profile in your users table
       await supabase.from('users').insert({
         'user_id': response.user!.id,
         'email': email,
@@ -30,7 +29,6 @@ class AuthService {
         'created_at': DateTime.now().toIso8601String(),
       });
     }
-
     return response;
   }
 
@@ -50,16 +48,12 @@ class AuthService {
     await supabase.auth.signOut();
   }
 
-  // Get Current User
   static User? get currentUser => supabase.auth.currentUser;
 
-  // Check if user is logged in
   static bool get isLoggedIn => currentUser != null;
 
-  // Auth State Changes Stream
   static Stream<AuthState> get authState => supabase.auth.onAuthStateChange;
 
-  // ✅ ADD THIS: Forgot password / Reset password
   static Future<void> resetPassword(String email) async {
     await supabase.auth.resetPasswordForEmail(email);
   }

@@ -50,7 +50,6 @@ class _MyTripPageState extends State<MyTripPage> {
   }
 
   void _initializeInterests() {
-    // Base interests for all cities
     List<Interest> baseInterests = [
       Interest(name: 'Culture', isSelected: false),
       Interest(name: 'Food', isSelected: false),
@@ -61,7 +60,6 @@ class _MyTripPageState extends State<MyTripPage> {
       Interest(name: 'Nature', isSelected: false),
     ];
 
-    // Add Shopping ONLY if destination is NOT AlUla
     if (_destination != 'AlUla') {
       baseInterests.insert(3, Interest(name: 'Shopping', isSelected: false));
     }
@@ -160,7 +158,7 @@ class _MyTripPageState extends State<MyTripPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: AppColors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -413,7 +411,7 @@ class _MyTripPageState extends State<MyTripPage> {
                     (s) => Chip(
                       label: Text(
                         s,
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(color: AppColors.white),
                       ),
                       backgroundColor: AppColors.accent,
                     ),
@@ -444,7 +442,6 @@ class _MyTripPageState extends State<MyTripPage> {
 
       if (!mounted) return;
 
-      // Navigate to loading page with the result
       Navigator.push(
         context,
         MaterialPageRoute(

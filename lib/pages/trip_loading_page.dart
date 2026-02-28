@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'trip_results_page.dart';
 import 'package:rafiq/services/trip_service.dart';
-import 'package:rafiq/services/edge_function_service.dart'; 
 
 class TripLoadingPage extends StatefulWidget {
   final String tripId;
@@ -111,7 +110,6 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
         _isLoading = false;
       });
       
-      // Navigate to results page
       _navigateToResults();
     }
     
@@ -144,7 +142,7 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
               const SizedBox(height: 8),
               Text(
                 error,
-                style: const TextStyle(fontSize: 12, color: Colors.red),
+                style: const TextStyle(fontSize: 12, color: AppColors.primary),
               ),
             ],
           ),
@@ -211,7 +209,7 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
         .replaceAll('{destination}', widget.destination);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -301,7 +299,7 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: AppColors.black.withOpacity(0.1),
                             blurRadius: 30,
                             spreadRadius: 2,
                             offset: const Offset(0, 12),
@@ -318,7 +316,7 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
                               color: AppColors.accent.withOpacity(0.3),
                               child: const Icon(
                                 Icons.image,
-                                color: Colors.white,
+                                color: AppColors.white,
                                 size: 50,
                               ),
                             );
@@ -341,7 +339,7 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: AppColors.black.withOpacity(0.15),
                             blurRadius: 35,
                             spreadRadius: 3,
                             offset: const Offset(0, 15),
@@ -358,7 +356,7 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
                               color: AppColors.primary.withOpacity(0.3),
                               child: const Icon(
                                 Icons.location_city,
-                                color: Colors.white,
+                                color: AppColors.white,
                                 size: 80,
                               ),
                             );
@@ -380,7 +378,7 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: AppColors.black.withOpacity(0.1),
                             blurRadius: 30,
                             spreadRadius: 2,
                             offset: const Offset(0, 12),
@@ -397,7 +395,7 @@ class _TripLoadingPageState extends State<TripLoadingPage> with SingleTickerProv
                               color: AppColors.secondary.withOpacity(0.3),
                               child: const Icon(
                                 Icons.landscape,
-                                color: Colors.white,
+                                color: AppColors.white,
                                 size: 50,
                               ),
                             );

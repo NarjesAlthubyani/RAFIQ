@@ -79,7 +79,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.black.withOpacity(0.05),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -353,7 +353,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 12,
                           ),
                         ),
@@ -361,6 +361,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
                   .toList(),
             ),
           ),
+
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -374,7 +375,6 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
               final isCurrentMonth = dayOffset > 0 && dayOffset <= daysInMonth;
               final day = isCurrentMonth ? dayOffset : null;
 
-              // Disable past days
               bool isSelectable = false;
               if (isCurrentMonth) {
                 if (_currentMonth.year > today.year ||
@@ -409,7 +409,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
                         ? AppColors.accent
                         : isInRange
                             ? AppColors.accent.withOpacity(0.1)
-                            : Colors.transparent,
+                            : AppColors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
@@ -420,11 +420,11 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         color: isSelectable
                             ? (isSelected
-                                ? Colors.white
+                                ? AppColors.white
                                 : isInRange
                                     ? AppColors.accent
                                     : AppColors.textPrimary)
-                            : Colors.grey.shade400,
+                            : AppColors.greyDark,
                       ),
                     ),
                   ),
@@ -485,7 +485,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
           data: ThemeData.light().copyWith(
             primaryColor: AppColors.primary,
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1E3D58),
+              primary: AppColors.textPrimary,
             ),
             buttonTheme: const ButtonThemeData(
               textTheme: ButtonTextTheme.primary,
@@ -561,7 +561,7 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: _selectedFromDate != null && _selectedToDate != null
-                  ? Colors.white
+                  ? AppColors.white
                   : AppColors.textSecondary,
             ),
           ),
