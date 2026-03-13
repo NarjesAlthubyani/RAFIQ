@@ -1,30 +1,26 @@
-import 'package:flutter/material.dart';
-import '../models/alert_model.dart';
+import 'package:rafiq/models/alert_model.dart';
+import 'package:rafiq/services/supabase_config.dart';
+import 'package:rafiq/services/auth_service.dart';
 
 class AlertRepository {
-  static List<AlertModel> getAlerts() {
-    return [
-      AlertModel(
-        title: "Heavy Rain Expected",
-        description:
-            "Moderate to heavy rainfall is forecasted for this afternoon.",
-        time: "Today, 2:00 PM - 6:00 PM",
-        icon: Icons.cloud,
-      ),
-      AlertModel(
-        title: "Traffic Jam on King Road",
-        description:
-            "Heavy traffic reported on King Road heading north. Expect delays of 20-30 minutes.",
-        time: "Today, 2:00 PM - 6:00 PM",
-        icon: Icons.traffic,
-      ),
-      AlertModel(
-        title: "Jeddah Beauty Show Cancelled",
-        description:
-            "The show has been cancelled and postponed until tomorrow.",
-        time: "Today, 2:00 PM - 6:00 PM",
-        icon: Icons.event_busy,
-      ),
-    ];
+
+  static Future<List<AlertModel>> getUserAlerts() async {
+
+    final user = AuthService.currentUser;
+
+    if (user == null) {
+      return [];
+    }
+
+    final response = await supabase
+        .from('alerts')
+        .select()
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((json) => AlertModel.fromJson(json))
+        .toList();
   }
+
 }

@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
 import '../models/alert_model.dart';
 import '../theme/app_colors.dart';
+import 'package:intl/intl.dart';
 
 class AlertCard extends StatelessWidget {
   final AlertModel alert;
 
   const AlertCard({super.key, required this.alert});
 
+  IconData getIcon(String type) {
+      switch (type) {
+        case 'weather':
+          return Icons.cloud;
+        case 'traffic':
+          return Icons.traffic;
+        case 'event':
+          return Icons.event;
+        default:
+          return Icons.notifications;
+      }
+    }
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -24,7 +37,7 @@ class AlertCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            alert.icon,
+            getIcon(alert.type),
             color: AppColors.accent,
             size: 28,
           ),
@@ -50,7 +63,7 @@ class AlertCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  alert.time,
+                  DateFormat('yyyy-MM-dd HH:mm').format(alert.createdAt),
                   style: const TextStyle(
                     fontSize: 12,
                     color: Colors.grey,

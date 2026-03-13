@@ -13,7 +13,7 @@ class SmartAlertsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alerts = AlertRepository.getAlerts();
+    
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -31,42 +31,58 @@ class SmartAlertsPage extends StatelessWidget {
 
       body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: ListView(
-            children: [
-              const SizedBox(height: 10),
-              const Text(
-                "Smart Alerts",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                "Stay informed about your trip",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 30),
-              if (alerts.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 50),
-                      child: Text(
-                        "No alerts available",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
+          child: FutureBuilder<List<AlertModel>>(
+            future: AlertRepository.getUserAlerts(),
+            builder: (context, snapshot) {
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return const Center(child: Text("Error loading alerts"));
+              }
+
+              final alerts = snapshot.data ?? [];
+
+              return ListView(
+                children: [
+                  const SizedBox(height: 10),
+                  const Text(
+                    "Smart Alerts",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    "Stay informed about your trip",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  if (alerts.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 50),
+                        child: Text(
+                          "No alerts available",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                else
-                  ...alerts.map((alert) => AlertCard(alert: alert)).toList(),
-            ],
-            
+                    )
+                  else
+                    ...alerts.map((alert) => AlertCard(alert: alert)).toList(),
+                ],
+              );
+            },
           ),
         ),
 
