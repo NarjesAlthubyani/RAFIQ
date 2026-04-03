@@ -12,7 +12,8 @@ flutter:
     - assets/Albalad.jpg
     - assets/login_image.jpg
     - assets/google_logo.png
-    - assets/riyadh.jpeg
+    - assets/riyadh.jpg
+    - assets/alula.jpg
     - assets/account.png
     - assets/facebook_logo.png
     - assets/jeddah.jpg
@@ -51,9 +52,8 @@ dependencies:
   google_generative_ai: ^0.4.0
   image_picker: ^1.0.7
   open_route_service: ^1.2.7
+  url_launcher: ^6.2.5
   
-  
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

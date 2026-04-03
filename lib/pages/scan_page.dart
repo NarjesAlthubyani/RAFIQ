@@ -248,7 +248,6 @@ class DashedBorderPainter extends CustomPainter {
         distance += dashWidth + dashSpace;
       }
     }
-
     canvas.drawPath(dashedPath, paint);
   }
 

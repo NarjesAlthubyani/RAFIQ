@@ -10,8 +10,7 @@ final supabase = Supabase.instance.client;
 class TripService {
   static const String _geminiApiUrl = 
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
-
-  // ================= TRAVEL TIME CALCULATOR USING OPENROUTESERVICE DIRECT API =================
+  
   static Future<int> getTravelTime({
     required double originLat,
     required double originLng,
@@ -19,12 +18,10 @@ class TripService {
     required double destLng,
   }) async {
     if (originLat == 0 || originLng == 0 || destLat == 0 || destLng == 0) {
-      print('⚠️ Missing coordinates, using default 30 min');
       return 30; 
     }
 
     try {
-      print('📍 Calculating route from ($originLat, $originLng) to ($destLat, $destLng)');
       
       final url = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
       
@@ -53,19 +50,15 @@ class TripService {
           double seconds = data['features'][0]['properties']['segments'][0]['duration'];
           int minutes = (seconds / 60).round();
           
-          print('🚗 Travel time: $minutes minutes');
           return minutes;
         }
       } else {
-        print('❌ OpenRouteService API error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('❌ OpenRouteService error: $e');
     }
     return _estimateTravelTimeByDistance(originLat, originLng, destLat, destLng);
   }
 
-  // ================= FALLBACK: ESTIMATE TRAVEL TIME BY DISTANCE =================
   static int _estimateTravelTimeByDistance(
     double lat1, double lon1, double lat2, double lon2
   ) {
@@ -89,7 +82,6 @@ class TripService {
     int minutes = (distanceInKm / speedKmPerHour * 60).round();
     minutes = minutes.clamp(5, 180); 
     
-    print('🚗 Estimated travel time (fallback): $minutes minutes (distance: ${distanceInKm.toStringAsFixed(1)} km)');
     return minutes;
   }
 
@@ -97,45 +89,26 @@ class TripService {
     return degree * pi / 180; 
   }
 
-  // ================= GET COORDINATES FROM PLACE NAME =================
   static Future<Map<String, double>> getCoordinatesFromPlace(String placeName, String city) async {
     try {
-      // First try to get from places table
-      final places = await supabase
-          .from('places')
+      final place = await supabase
+          .from('saudi_places')
           .select('lat, lng')
           .ilike('name', '%$placeName%')
           .eq('city', city)
           .maybeSingle();
       
-      if (places != null && places['lat'] != null && places['lng'] != null) {
+      if (place != null && place['lat'] != null && place['lng'] != null) {
         return {
-          'lat': (places['lat'] as num).toDouble(),
-          'lng': (places['lng'] as num).toDouble(),
-        };
-      }
-
-      final food = await supabase
-          .from('food_venues')
-          .select('lat, lng')
-          .ilike('name', '%$placeName%')
-          .eq('city', city)
-          .maybeSingle();
-      
-      if (food != null && food['lat'] != null && food['lng'] != null) {
-        return {
-          'lat': (food['lat'] as num).toDouble(),
-          'lng': (food['lng'] as num).toDouble(),
+          'lat': (place['lat'] as num).toDouble(),
+          'lng': (place['lng'] as num).toDouble(),
         };
       }
     } catch (e) {
-      print('❌ Error getting coordinates: $e');
     }
-    
     return {'lat': 0.0, 'lng': 0.0};
   }
 
-  // ================= FETCH FOOD VENUES FROM SUPABASE =================
   static Future<List<Map<String, dynamic>>> getFoodVenues({
     required String city,
     String? priceLevel,
@@ -144,9 +117,10 @@ class TripService {
   }) async {
     try {
       var query = supabase
-          .from('food_venues')
+          .from('saudi_places')
           .select('*')
-          .eq('city', city);
+          .eq('city', city)
+          .eq('record_type', 'restaurant'); 
 
       if (priceLevel != null && priceLevel.isNotEmpty) {
         query = query.eq('price_level', priceLevel);
@@ -163,24 +137,22 @@ class TripService {
       final response = await query;
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('❌ Error fetching food venues: $e');
       return [];
     }
   }
 
-  // ================= FETCH PLACES FROM SUPABASE =================
   static Future<List<Map<String, dynamic>>> getPlaces({
     required String city,
     List<String>? categories,
     int? maxPriceLevel,
     String? bestTime,
-    String? recordType,
   }) async {
     try {
       var query = supabase
-          .from('places')
+          .from('saudi_places')
           .select('*')
-          .eq('city', city);
+          .eq('city', city)
+          .neq('record_type', 'restaurant'); 
 
       if (categories != null && categories.isNotEmpty) {
         query = query.inFilter('category', categories);
@@ -194,19 +166,13 @@ class TripService {
         query = query.eq('best_time_of_day', bestTime);
       }
 
-      if (recordType != null) {
-        query = query.eq('record_type', recordType);
-      }
-
       final response = await query;
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('❌ Error fetching places: $e');
       return [];
     }
   }
 
-  // ================= FORMAT PLACES FOR AI PROMPT =================
   static String _formatPlacesForPrompt(List<Map<String, dynamic>> places) {
     String result = "";
     
@@ -223,7 +189,6 @@ class TripService {
     return result;
   }
 
-  // ================= FORMAT FOOD VENUES FOR AI PROMPT =================
   static String _formatFoodForPrompt(List<Map<String, dynamic>> foodVenues) {
     String result = "";
     
@@ -235,11 +200,9 @@ class TripService {
       }
       result += "\n";
     }
-    
     return result;
   }
 
-  // ================= VALIDATE ITINERARY FEASIBILITY =================
   static Future<Map<String, dynamic>> validateItinerary(
     Map<String, dynamic> itinerary,
     String city,
@@ -279,12 +242,12 @@ class TripService {
           var nextActivity = activities[i + 1];
           
           var currentCoords = await getCoordinatesFromPlace(
-            activity['title'] ?? activity['venue_name'] ?? '',
+            activity['title'] ?? '',
             city,
           );
           
           var nextCoords = await getCoordinatesFromPlace(
-            nextActivity['title'] ?? nextActivity['venue_name'] ?? '',
+            nextActivity['title'] ?? '',
             city,
           );
       
@@ -298,7 +261,6 @@ class TripService {
               destLng: nextCoords['lng']!,
             );
           }
-          
           totalMinutes += travelTime;
         }
       }
@@ -315,7 +277,47 @@ class TripService {
     };
   }
 
-  // ================= CALL GEMINI WITH IMPROVED PROMPT =================
+  static List<Map<String, dynamic>> _clusterPlacesByArea(
+    List<Map<String, dynamic>> places,
+  ) {
+    if (places.isEmpty) return [];
+
+    places = List.from(places);
+    places.sort((a, b) => (a['lat'] ?? 0).compareTo(b['lat'] ?? 0));
+    return places.take(15).toList();
+  }
+
+  static List<Map<String, dynamic>> _limitFoodOptions(
+    List<Map<String, dynamic>> foodVenues,
+  ) {
+    if (foodVenues.isEmpty) return [];
+    foodVenues = List.from(foodVenues);
+    return foodVenues.take(10).toList();
+  }
+
+  static bool _hasDuplicateVenues(Map<String, dynamic> itinerary) {
+    final Set<String> used = {};
+
+    final days = itinerary['itinerary'] as List?;
+    if (days == null) return true;
+
+    for (var day in days) {
+      final activities = day['activities'] as List?;
+      if (activities == null) continue;
+
+      for (var act in activities) {
+        final name = act['title'];
+        if (name == null) continue;
+
+        if (used.contains(name)) {
+          return true;
+        }
+        used.add(name);
+      }
+    }
+    return false;
+  }
+
   static Future<Map<String, dynamic>> _callGeminiWithPrompt({
     required String city,
     required DateTime fromDate,
@@ -325,107 +327,184 @@ class TripService {
     required List<Map<String, dynamic>> places,
     required List<Map<String, dynamic>> foodVenues,
   }) async {
-    
-    final days = toDate.difference(fromDate).inDays;
-    
+
+    final days = toDate.difference(fromDate).inDays + 1;
+
+    final clusteredPlaces = _clusterPlacesByArea(places);
+    final limitedFood = _limitFoodOptions(foodVenues);
+
+    final formattedPlaces = _formatPlacesForPrompt(clusteredPlaces);
+    final formattedFood = _formatFoodForPrompt(limitedFood);
+
     String prompt = """
-    You are a Saudi travel expert creating a realistic ${days}-day itinerary for $city, Saudi Arabia.
+You are a deterministic Saudi travel itinerary generator.
 
-    USER PREFERENCES:
-    - Total Budget: SAR ${budget}
-    - Interests: ${interests.join(', ')}
-    - Travel Dates: ${fromDate.toIso8601String().split('T')[0]} to ${toDate.toIso8601String().split('T')[0]}
+Your job is to create a realistic ${days}-day itinerary for a trip in ${city}, Saudi Arabia.
 
-    CRITICAL TIME CONSTRAINTS:
-    - Morning activities: 9:00 AM - 12:00 PM (3 hours max)
-    - Lunch: 12:30 PM - 2:00 PM (1.5 hours)
-    - Afternoon activities: 2:30 PM - 5:30 PM (3 hours max)
-    - Dinner: 7:00 PM - 9:00 PM (2 hours)
-    - Add 30 minutes travel time between different locations
-    - Maximum 4-5 activities per day
-    - Total activity time per day should not exceed 8-9 hours
+You MUST strictly follow the dataset and rules below.
 
-    AVAILABLE ATTRACTIONS (USE ONLY THESE):
-    ${_formatPlacesForPrompt(places)}
+=====================
+HARD RULES
+=====================
 
-    AVAILABLE RESTAURANTS & CAFES (USE ONLY THESE FOR MEALS):
-    ${_formatFoodForPrompt(foodVenues)}
+1. ONLY use places from the provided datasets.
+2. NEVER invent locations.
+3. NEVER repeat the same attraction.
+4. NEVER repeat the same restaurant.
+5. Attractions MUST come from AVAILABLE ATTRACTIONS.
+6. Restaurants and cafes MUST come from AVAILABLE RESTAURANTS.
+7. Use the EXACT "name" value from the dataset.
+8. Each day may contain MAXIMUM 6 activities.
+9. Daily total activity duration MUST NOT exceed 9 hours (540 minutes).
+10. Add 20 minutes travel time when moving between different areas.
+11. Group nearby locations (similar latitude/longitude) in the same day when possible.
+12. Lunch must be scheduled after the morning attraction.
+13. Dinner must be scheduled after the afternoon attraction.
+14. Prefer indoor venues if best_time_of_day indicates evening.
+15. Use the dataset values for:
+   - duration_minutes
+   - price_level
+16. The total cost MUST NOT exceed SAR ${budget}.
+17. Do NOT include locations from other cities.
+18. Breakfast must come from AVAILABLE RESTAURANTS where category is "café" or "restaurant".
+19. Breakfast must be the first activity of the day.
 
-    IMPORTANT RULES:
-    1. Use EXACT names from the lists above
-    2. For meals, ALWAYS pick from restaurants/cafes list
-    3. Match price levels to the user's budget
-    4. Group nearby attractions on same day
-    5. Include a mix of free and paid activities
+=====================
+COST RULE
+=====================
 
-    Return the response in this EXACT JSON format:
+Convert price_level to SAR cost:
+
+0 → 0 SAR  
+1 → 50 SAR  
+2 → 100 SAR  
+3 → 200 SAR  
+4 → 400 SAR
+
+Use this mapping when calculating total_cost.
+
+=====================
+TIME STRUCTURE
+=====================
+
+Each day should follow this structure:
+
+Morning:
+- Breakfast (Cafe or Restaurant)
+
+Late Morning:
+- Attraction
+
+Midday:
+- Lunch (Restaurant)
+
+Afternoon:
+- Attraction
+
+Evening:
+- Dinner (Restaurant)
+
+Optional:
+- Coffee stop
+
+=====================
+AVAILABLE ATTRACTIONS
+=====================
+
+${formattedPlaces}
+
+Each attraction contains:
+name, category, lat, lng, duration_minutes, price_level
+
+=====================
+AVAILABLE RESTAURANTS
+=====================
+
+${formattedFood}
+
+Each restaurant contains:
+name, category, lat, lng, duration_minutes, price_level
+
+=====================
+OUTPUT FORMAT
+=====================
+
+Return ONLY valid JSON using this exact schema:
+
+{
+  "summary": "short description of the trip",
+  "total_cost": number,
+  "itinerary": [
     {
-      "itinerary": [
+      "day": number,
+      "date": "YYYY-MM-DD",
+      "activities": [
         {
-          "day": 1,
-          "date": "${fromDate.toIso8601String().split('T')[0]}",
-          "activities": [
-            {
-              "title": "Activity Name",
-              "category": "History/Nature/Food/etc",
-              "description": "Brief description",
-              "location": "Area name",
-              "cost": 0.0,
-              "duration": 90,
-              "venue_name": "Restaurant name (for meals only)"
-            }
-          ]
+          "title": "place name",
+          "category": "Attraction | Food | Cafe",
+          "location": "${city}",
+          "duration": number,
+          "cost": number
         }
-      ],
-      "total_cost": 0.0,
-      "summary": "Brief trip summary"
+      ]
     }
-    """;
+  ]
+}
 
-    print('🤖 Calling Gemini API for $city...');
-    
-    try {
-      final response = await http.post(
-        Uri.parse('$_geminiApiUrl?key=${dotenv.env['GEMINI_API_KEY']}'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': prompt}
-              ]
-            }
-          ],
-          'generationConfig': {
-            'temperature': 0.7,
-            'topK': 1,
-            'topP': 1,
-            'maxOutputTokens': 4096,
+=====================
+FINAL VALIDATION
+=====================
+
+Before returning the result ensure:
+
+✓ No duplicate attractions  
+✓ No duplicate restaurants  
+✓ All places exist in dataset  
+✓ Daily duration ≤ 540 minutes  
+✓ total_cost ≤ SAR ${budget}  
+✓ JSON is valid  
+
+Return ONLY the JSON.
+""";
+
+    final response = await http.post(
+      Uri.parse('$_geminiApiUrl?key=${dotenv.env['GEMINI_API_KEY']}'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'contents': [
+          {
+            'parts': [
+              {'text': prompt}
+            ]
           }
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final aiText = data['candidates'][0]['content']['parts'][0]['text'];
-        
-        final startIndex = aiText.indexOf('{');
-        final endIndex = aiText.lastIndexOf('}') + 1;
-        
-        if (startIndex != -1 && endIndex > startIndex) {
-          final jsonStr = aiText.substring(startIndex, endIndex);
-          return jsonDecode(jsonStr);
+        ],
+        'generationConfig': {
+          'temperature': 0.3, 
+          'topK': 40,
+          'topP': 0.9,
+          'maxOutputTokens': 4096,
         }
-      } else {
-        print('❌ Gemini API error: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ Gemini API error: $e');
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Gemini API error: ${response.body}");
     }
-    throw Exception('Failed to generate AI plan');
+
+    final data = jsonDecode(response.body);
+    final aiText = data['candidates'][0]['content']['parts'][0]['text'];
+
+    final startIndex = aiText.indexOf('{');
+    final endIndex = aiText.lastIndexOf('}') + 1;
+
+    if (startIndex != -1 && endIndex > startIndex) {
+      final jsonStr = aiText.substring(startIndex, endIndex);
+      return jsonDecode(jsonStr);
+    }
+
+    throw Exception('Invalid JSON from Gemini');
   }
 
-  // ================= GENERATE AND VALIDATE PLAN (with retries) =================
   static Future<Map<String, dynamic>> generateAndValidatePlan({
     required String city,
     required DateTime fromDate,
@@ -435,14 +514,13 @@ class TripService {
     required List<Map<String, dynamic>> places,
     required List<Map<String, dynamic>> foodVenues,
   }) async {
-    
+
     const int maxAttempts = 3;
-    
+
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      print('🎯 Generation attempt $attempt of $maxAttempts');
-      
+
       try {
-        var plan = await _callGeminiWithPrompt(
+        final plan = await _callGeminiWithPrompt(
           city: city,
           fromDate: fromDate,
           toDate: toDate,
@@ -451,29 +529,40 @@ class TripService {
           places: places,
           foodVenues: foodVenues,
         );
-       
-        final validation = await validateItinerary(plan, city);
-        
-        if (validation['isValid'] == true) {
-          print('✅ Plan validated successfully');
-          return plan;
-        } else {
-          print('⚠️ Validation failed: ${validation['issues']}');
-          
-          if (attempt == maxAttempts) {
-            print('⚠️ Using best effort plan after $maxAttempts attempts');
-            return plan;
-          }
+
+        if (_hasDuplicateVenues(plan)) {
+          continue;
         }
+
+        final validation = await validateItinerary(plan, city);
+
+        if (validation['isValid'] == true) {
+          return plan;
+        }
+
       } catch (e) {
-        print('❌ Generation error on attempt $attempt: $e');
       }
     }
-    
+
     return _createFallbackPlan(city, fromDate, toDate, places, foodVenues);
   }
+  static Future<String?> getImageByName(String name, String city) async {
+  try {
+    final place = await supabase
+        .from('saudi_places')
+        .select('image_url')
+        .ilike('name', '%$name%')
+        .eq('city', city)
+        .maybeSingle();
 
-  // ================= CREATE FALLBACK PLAN =================
+    if (place != null && place['image_url'] != null) {
+      return place['image_url'];
+    }
+  } catch (e) {
+  }
+
+  return null;
+}
   static Map<String, dynamic> _createFallbackPlan(
     String city,
     DateTime fromDate,
@@ -481,7 +570,7 @@ class TripService {
     List<Map<String, dynamic>> places,
     List<Map<String, dynamic>> foodVenues,
   ) {
-    final days = toDate.difference(fromDate).inDays;
+    final days = toDate.difference(fromDate).inDays + 1;
     List<Map<String, dynamic>> itinerary = [];
     
     final samplePlaces = places.take(6).toList();
@@ -495,28 +584,15 @@ class TripService {
       List<Map<String, dynamic>> activities = [];
       final currentDate = fromDate.add(Duration(days: i - 1));
       
-      if (samplePlaces.isNotEmpty) {
-        final place = samplePlaces[(i - 1) % samplePlaces.length];
-        activities.add({
-          'title': place['name'],
-          'category': place['category'] ?? 'Attraction',
-          'description': place['description'] ?? 'Visit this attraction',
-          'location': city,
-          'cost': place['price_level'] == 0 ? 0.0 : 50.0,
-          'duration': place['duration_minutes'] ?? 90,
-        });
-      }
-      
       if (restaurants.isNotEmpty) {
         final restaurant = restaurants[i % restaurants.length];
         activities.add({
-          'title': 'Lunch at ${restaurant['name']}',
+          'title': restaurant['name'],
           'category': 'Food',
           'description': restaurant['description'] ?? 'Enjoy local cuisine',
           'location': city,
           'cost': 150.0,
           'duration': 90,
-          'venue_name': restaurant['name'],
         });
       }
       
@@ -535,26 +611,12 @@ class TripService {
       if (restaurants.length > 1) {
         final restaurant = restaurants[(i + 2) % restaurants.length];
         activities.add({
-          'title': 'Dinner at ${restaurant['name']}',
+          'title': restaurant['name'],
           'category': 'Food',
           'description': restaurant['description'] ?? 'Fine dining experience',
           'location': city,
           'cost': 200.0,
           'duration': 120,
-          'venue_name': restaurant['name'],
-        });
-      }
-      
-      if (cafes.isNotEmpty) {
-        final cafe = cafes[i % cafes.length];
-        activities.add({
-          'title': 'Coffee at ${cafe['name']}',
-          'category': 'Food',
-          'description': cafe['description'] ?? 'Relax with coffee',
-          'location': city,
-          'cost': 50.0,
-          'duration': 60,
-          'venue_name': cafe['name'],
         });
       }
       
@@ -579,7 +641,6 @@ class TripService {
     };
   }
 
-  // ================= MAP INTERESTS TO CATEGORIES =================
   static List<String> _mapInterestsToCategories(List<String> interests) {
     List<String> categories = [];
     
@@ -609,7 +670,6 @@ class TripService {
     return categories.toSet().toList();
   }
 
-  // ================= STEP 1: Save Trip Request =================
   static Future<Map<String, dynamic>> saveTripRequest({
     required String destination,
     required DateTime fromDate,
@@ -618,7 +678,7 @@ class TripService {
     final user = AuthService.currentUser;
     if (user == null) throw Exception('User not logged in');
 
-    final days = toDate.difference(fromDate).inDays;
+    final days = toDate.difference(fromDate).inDays + 1;
 
     final response = await supabase
         .from('preferences')
@@ -636,7 +696,6 @@ class TripService {
     return Map<String, dynamic>.from(response);
   }
 
-  // ================= STEP 2: Save Trip Details AND Generate COMPLETE Plan =================
   static Future<Map<String, dynamic>> saveTripDetails({
     required String preferenceId,
     required String budgetRange,
@@ -686,15 +745,11 @@ class TripService {
 
     final trip = Map<String, dynamic>.from(tripRaw);
 
-    // STEP 1: Fetch food venues
-    print('🍽️ Fetching food venues for $city...');
     final foodVenues = await getFoodVenues(
       city: city,
       priceLevel: _mapBudgetToPriceLevel(budget),
     );
     
-    // STEP 2: Fetch places based on interests
-    print('🏛️ Fetching places for $city...');
     final categories = _mapInterestsToCategories(selectedInterests);
     final places = await getPlaces(
       city: city,
@@ -702,10 +757,6 @@ class TripService {
       maxPriceLevel: budget > 5000 ? 4 : 2,
     );
     
-    print('✅ Found ${foodVenues.length} food venues and ${places.length} places');
-
-    // STEP 3: Generate and validate COMPLETE AI trip plan
-    print('🤖 Generating and validating COMPLETE AI trip plan...');
     final aiPlan = await generateAndValidatePlan(
       city: city,
       fromDate: fromDate,
@@ -715,9 +766,7 @@ class TripService {
       places: places,
       foodVenues: foodVenues,
     );
-    print('✅ AI plan generated and validated');
 
-    // STEP 4: Save AI response to database
     await supabase.from('ai_responses').insert({
       'trip_id': trip['trip_id'],
       'user_id': user.id,
@@ -726,7 +775,6 @@ class TripService {
       'total_cost': _safeDouble(aiPlan['total_cost']),
     });
 
-    // STEP 5: Update trip status
     await supabase
         .from('trip_plans')
         .update({'status': 'completed'})
@@ -741,7 +789,6 @@ class TripService {
     };
   }
 
-  // ================= STEP 3: Save AI Generated Trip (Legacy) =================
   static Future<void> saveAIGeneratedTrip({
     required String tripId,
     required dynamic aiResponse,
@@ -767,7 +814,6 @@ class TripService {
         .eq('trip_id', tripId);
   }
 
-  // ================= STEP 4: Get User Trips =================
   static Future<List<Map<String, dynamic>>> getUserTrips() async {
     final user = AuthService.currentUser;
     if (user == null) return [];
@@ -788,61 +834,91 @@ class TripService {
     return List<Map<String, dynamic>>.from(response);
   }
 
- // ================= STEP 5: Get Single Trip - FIXED =================
-static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
-  try {
-    print('🔍 Fetching trip details for ID: $tripId');
-    
-    final tripResponse = await supabase
-        .from('trip_plans')
-        .select('''
-          *,
-          preferences!inner (*)
-        ''')
-        .eq('trip_id', tripId)
-        .maybeSingle();
+  static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
+    try {
+      
+      final tripResponse = await supabase
+          .from('trip_plans')
+          .select('''
+            *,
+            preferences!inner (*)
+          ''')
+          .eq('trip_id', tripId)
+          .maybeSingle();
 
-    if (tripResponse == null) {
-      print('❌ No trip found with ID: $tripId');
+      if (tripResponse == null) {
+        return null;
+      }
+      
+      final aiResponses = await supabase
+          .from('ai_responses')
+          .select('*')
+          .eq('trip_id', tripId)
+          .order('created_at', ascending: false); 
+     
+      Map<String, dynamic> tripData = Map<String, dynamic>.from(tripResponse);
+      tripData['ai_responses'] = aiResponses;
+      
+      final preferenceId = tripData['preference_id'];
+      
+      if (preferenceId != null) {
+        final interestsResponse = await supabase
+            .from('interests')
+            .select('selected_interests')
+            .eq('preference_id', preferenceId)
+            .maybeSingle();
+        
+        if (interestsResponse != null) {
+          tripData['interests'] = interestsResponse;
+        }
+      }
+      
+      return tripData;
+    } catch (e) {
       return null;
     }
-
-    print('✅ Trip details fetched successfully');
+  }
+  
+  static Future<Map<String, dynamic>> getTicketInfo(String activityName) async {
+  try {
     
-    final aiResponses = await supabase
-        .from('ai_responses')
-        .select('*')
-        .eq('trip_id', tripId)
-        .order('created_at', ascending: false); 
+    var response = await supabase
+        .from('saudi_places') 
+        .select('ticket_booking, ticket_link, name')
+        .eq('name', activityName)
+        .maybeSingle();
     
-    print('📊 Found ${aiResponses.length} AI responses for this trip');
-   
-    Map<String, dynamic> tripData = Map<String, dynamic>.from(tripResponse);
-    tripData['ai_responses'] = aiResponses;
-    
-    final preferenceId = tripData['preference_id'];
-    
-    if (preferenceId != null) {
+    if (response == null) {
+      final allPlaces = await supabase
+          .from('saudi_places')
+          .select('name, ticket_booking, ticket_link');
       
-      final interestsResponse = await supabase
-          .from('interests')
-          .select('selected_interests')
-          .eq('preference_id', preferenceId)
-          .maybeSingle();
-      
-      if (interestsResponse != null) {
-        tripData['interests'] = interestsResponse;
+      for (var place in allPlaces) {
+        String placeName = place['name']?.toString() ?? '';
+        if (activityName.toLowerCase().contains(placeName.toLowerCase()) ||
+            placeName.toLowerCase().contains(activityName.toLowerCase())) {
+          response = place;
+          break;
+        }
       }
+    } 
+    
+    if (response != null) {
+      String? ticketLink = response['ticket_link']?.toString();
+      bool hasTicket = ticketLink != null && ticketLink.isNotEmpty;
+      
+      return {
+        'hasTicket': hasTicket,
+        'ticketLink': ticketLink,
+      };
     }
     
-    return tripData;
+    return {'hasTicket': false, 'ticketLink': null};
   } catch (e) {
-    print('❌ Error in getTripDetails: $e');
-    return null;
+    return {'hasTicket': false, 'ticketLink': null};
   }
 }
 
-  // ================= STEP 6: Delete Trip =================
   static Future<bool> deleteTrip(String tripId) async {
     try {
       await supabase
@@ -851,12 +927,10 @@ static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
           .eq('trip_id', tripId);
       return true;
     } catch (e) {
-      print('❌ Error deleting trip: $e');
       return false;
     }
   }
 
-  // ================= STEP 7: Get Saved Trips =================
   static Future<List<Map<String, dynamic>>> getSavedTrips() async {
     final user = AuthService.currentUser;
     if (user == null) return [];
@@ -876,7 +950,6 @@ static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  // ================= STEP 8: Save Trip (Bookmark) =================
   static Future<bool> saveTrip({
     required String tripId,
     String? notes,
@@ -893,12 +966,10 @@ static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
       });
       return true;
     } catch (e) {
-      print('❌ Error saving trip: $e');
       return false;
     }
   }
 
-  // ================= HELPER: Map Budget to Price Level =================
   static String _mapBudgetToPriceLevel(double budget) {
     if (budget < 1000) return 'budget';
     if (budget < 3000) return 'moderate';
@@ -906,7 +977,6 @@ static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
     return 'luxury';
   }
 
-  // ================= HELPER: Safe Double =================
   static double _safeDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
@@ -915,7 +985,6 @@ static Future<Map<String, dynamic>?> getTripDetails(String tripId) async {
     return 0.0;
   }
 
-  // ================= HELPER: Parse Budget =================
   static double _parseBudget(String budgetRange) {
     if (budgetRange == '10000+') return 10000.0;
 
