@@ -61,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
         fit: StackFit.expand,
         children: [
           // Background image
-          Image.asset('assets/riyadh.jpeg', fit: BoxFit.cover),
+          Image.asset('assets/riyadh.jpg', fit: BoxFit.cover),
 
           // Light overlay
           Container(color: Colors.black.withOpacity(0.08)),
