@@ -56,7 +56,6 @@ class _MyTripPageState extends State<MyTripPage> {
       Interest(name: 'History', isSelected: false),
       Interest(name: 'Entertainment', isSelected: false),
       Interest(name: 'Adventure', isSelected: false),
-      Interest(name: 'Relaxation', isSelected: false),
       Interest(name: 'Nature', isSelected: false),
     ];
 

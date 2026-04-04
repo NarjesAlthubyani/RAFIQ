@@ -319,7 +319,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                             color: AppColors.white,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 1),
                         Row(
                           children: [
                             const Padding(

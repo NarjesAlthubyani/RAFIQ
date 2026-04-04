@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../models/alert_model.dart';
 import '../widgets/alert_card.dart';
-import '../data/alert_repository.dart';
 import '../services/weather_service.dart';
 import '../adapters/weather_adapter.dart';
 import '../services/supabase_config.dart';
 import '../services/auth_service.dart';
-
 
 class SmartAlertsPage extends StatefulWidget {
   const SmartAlertsPage({super.key});

@@ -15,8 +15,6 @@ class SupabaseConfig {
       rethrow;
     }
   }
-
   static SupabaseClient get client => Supabase.instance.client;
 }
-
 final supabase = SupabaseConfig.client;
