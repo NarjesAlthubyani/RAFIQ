@@ -3,7 +3,8 @@ import '../theme/app_colors.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'dart:ui';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -16,16 +17,86 @@ class _ScanPageState extends State<ScanPage> {
   final ImagePicker _picker = ImagePicker();
   XFile? _pickedImage;
 
+  bool _isLoading = false;
+  Map<String, dynamic>? _result;
+  String? _error;
+
+  // ✅ تنسيق الاسم: nassif_house -> Nassif House
+  String _formatLandmarkName(String raw) {
+    if (raw.trim().isEmpty) return "";
+    final words = raw.replaceAll("_", " ").split(" ");
+    return words.map((w) {
+      if (w.isEmpty) return "";
+      return w[0].toUpperCase() + w.substring(1);
+    }).join(" ");
+  }
+
   Future<void> _pickFromGallery() async {
     final XFile? img = await _picker.pickImage(source: ImageSource.gallery);
     if (!mounted) return;
-    if (img != null) setState(() => _pickedImage = img);
+    if (img != null) {
+      setState(() {
+        _pickedImage = img;
+        _result = null;
+        _error = null;
+      });
+    }
   }
 
   Future<void> _pickFromCamera() async {
     final XFile? img = await _picker.pickImage(source: ImageSource.camera);
     if (!mounted) return;
-    if (img != null) setState(() => _pickedImage = img);
+    if (img != null) {
+      setState(() {
+        _pickedImage = img;
+        _result = null;
+        _error = null;
+      });
+    }
+  }
+
+  Future<void> _submitToBackend() async {
+    if (_pickedImage == null) return;
+
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+
+    try {
+      // ✅ للـ Android Emulator 
+      final uri = Uri.parse('http://10.0.2.2:8000/api/landmarks/recognize');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(
+        await http.MultipartFile.fromPath('image', _pickedImage!.path),
+      );
+
+      final streamedResponse = await request.send();
+      final responseBody = await streamedResponse.stream.bytesToString();
+
+      if (streamedResponse.statusCode != 200) {
+        setState(() {
+          _error = 'Server error: ${streamedResponse.statusCode}\n$responseBody';
+        });
+        return;
+      }
+
+      final data = jsonDecode(responseBody) as Map<String, dynamic>;
+
+      setState(() {
+        _result = data;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Request failed: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _showPickOptions() {
@@ -66,7 +137,6 @@ class _ScanPageState extends State<ScanPage> {
 
   @override
   Widget build(BuildContext context) {
-   
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -80,7 +150,7 @@ class _ScanPageState extends State<ScanPage> {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: AppColors.secondary, 
+                color: AppColors.secondary,
                 fontFamily: 'Georgia',
               ),
             ),
@@ -141,7 +211,7 @@ class _ScanPageState extends State<ScanPage> {
                                 'PNG, PDF, AND JPEG',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color:AppColors.greyDark,
+                                  color: AppColors.greyDark,
                                   letterSpacing: 1.2,
                                 ),
                               ),
@@ -156,17 +226,129 @@ class _ScanPageState extends State<ScanPage> {
               ),
             ),
 
+            // ================= RESULT =================
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: CircularProgressIndicator(),
+              ),
+
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+
+            if (_result != null)
+              Builder(builder: (context) {
+                final recognized = (_result!["recognized"] == true);
+
+                final rawName = (_result!["landmark_name"] ?? "").toString();
+                final prettyName = _formatLandmarkName(rawName);
+
+                final description =
+                    (_result!["description"] ?? "").toString().trim();
+
+                final confidence = _result!["confidence"];
+
+                // تحويل confidence إلى نسبة مئوية
+                String confidenceText = "";
+                if (confidence != null) {
+                  final c = (confidence is num)
+                      ? confidence.toDouble()
+                      : double.tryParse(confidence.toString());
+                  if (c != null) {
+                    confidenceText = "${(c * 100).toStringAsFixed(1)}%";
+                  }
+                }
+
+                if (!recognized) {
+                  final errorMsg = (_result!["error"] ??
+                          "Unable to Recognize Landmark")
+                      .toString();
+
+                  return Container(
+                    margin: const EdgeInsets.only(top: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 8)
+                      ],
+                    ),
+                    child: Text(
+                      errorMsg,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red,
+                      ),
+                    ),
+                  );
+                }
+
+                return Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        prettyName.isEmpty ? rawName : prettyName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        description.isEmpty
+                            ? "No description available."
+                            : description,
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      if (confidenceText.isNotEmpty)
+                        Text("Confidence: $confidenceText"),
+                    ],
+                  ),
+                );
+              }),
+
             const Spacer(),
 
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {setState(() {
-                       _pickedImage = null; });},
+                    onPressed: () {
+                      setState(() {
+                        _pickedImage = null;
+                        _result = null;
+                        _error = null;
+                      });
+                    },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: AppColors.primary.withOpacity(0.35)),
+                      side: BorderSide(
+                          color: AppColors.primary.withOpacity(0.35)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -174,7 +356,7 @@ class _ScanPageState extends State<ScanPage> {
                     child: const Text(
                       'Cancel',
                       style: TextStyle(
-                        color:AppColors.greyDark,
+                        color: AppColors.greyDark,
                         fontSize: 16,
                       ),
                     ),
@@ -183,16 +365,12 @@ class _ScanPageState extends State<ScanPage> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _pickedImage == null
+                    onPressed: (_pickedImage == null || _isLoading)
                         ? null
-                        : () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Submitted!')),
-                            );
-                          },
+                        : _submitToBackend,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary, 
-                      foregroundColor:AppColors.background,
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.background,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
                       shape: RoundedRectangleBorder(

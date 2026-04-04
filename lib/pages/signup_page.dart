@@ -67,7 +67,7 @@ class _SignUpPageState extends State<SignUpPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/riyadh.jpeg', fit: BoxFit.cover),
+          Image.asset('assets/riyadh.jpg', fit: BoxFit.cover),
           Container(color: Colors.black.withOpacity(0.08)),
 
           SafeArea(
