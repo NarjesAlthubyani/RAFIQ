@@ -23,7 +23,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late int _currentIndex;
   String _userName = "User"; // Default name
-  bool _isLoading = true;
 
   final List<Widget> _pages = [
     const HomeContent(),
@@ -53,12 +52,10 @@ class _HomePageState extends State<HomePage> {
         
         setState(() {
           _userName = userName;
-          _isLoading = false;
         });
       }
     } catch (e) {
       print('Error loading user data: $e');
-      setState(() => _isLoading = false);
     }
   }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:rafiq/theme/app_colors.dart';
 import 'package:rafiq/pages/home_page.dart';
@@ -36,7 +37,6 @@ class _TripResultsPageState extends State<TripResultsPage>{
   List<Map<String, dynamic>> _allActivities = [];
   Map<String, dynamic>? _tripData;
   bool _isLoading = true;
-  bool _isSaved = false;
   bool _isDisposed = false;
   bool _showAddActivityText = false;
 
@@ -59,154 +59,72 @@ class _TripResultsPageState extends State<TripResultsPage>{
   }
 
   Future<void> _loadTripData() async {
-    _safeSetState(() => _isLoading = true);
+  _safeSetState(() => _isLoading = true);
 
-    try {
-      final tripData = await TripService.getTripDetails(widget.tripId);
-
-      if (!_isDisposed && mounted) {
-        if (tripData != null) {
-          _tripData = tripData;
-
-          dynamic aiResponses = tripData['ai_responses'];
-
-          Map<String, dynamic>? aiResponseMap;
-
-          if (aiResponses != null) {
-            if (aiResponses is List && aiResponses.isNotEmpty) {
-              final firstItem = aiResponses.first;
-              if (firstItem is Map) {
-              }
-            } else if (aiResponses is Map) {
-              aiResponseMap = Map<String, dynamic>.from(aiResponses as Map);
+  try {
+    final tripData = await TripService.getTripDetails(widget.tripId);
+    
+    if (!_isDisposed && mounted && tripData != null) {
+      _tripData = tripData;
+      
+      final aiResponsesList = tripData['ai_responses'];
+      
+      if (aiResponsesList != null && aiResponsesList is List && aiResponsesList.isNotEmpty) {
+      
+        final firstResponse = aiResponsesList.first as Map<String, dynamic>;
+        
+        final fullResponse = firstResponse['full_response'];
+        
+        Map<String, dynamic> responseData = {};
+        
+        if (fullResponse is String) {
+          try {
+            responseData = jsonDecode(fullResponse);
+          } catch (e) {
+          }
+        } else if (fullResponse is Map) {
+          responseData = Map<String, dynamic>.from(fullResponse);
+        } else {
+        }
+        
+        if (responseData.isNotEmpty) {
+          dynamic itineraryData = responseData['itinerary'];
+          
+          List<dynamic> itineraryList = [];
+          
+          if (itineraryData is List) {
+            itineraryList = itineraryData;
+          } else if (itineraryData != null) {
+            itineraryList = [itineraryData];
+          } else {
+            if (responseData.containsKey('days')) {
+              itineraryList = responseData['days'] is List ? responseData['days'] : [];
+            } else if (responseData.containsKey('plan')) {
+              itineraryList = responseData['plan'] is List ? responseData['plan'] : [];
             }
-
-            if (aiResponseMap != null &&
-                aiResponseMap['full_response'] != null) {
-              final fullResponse = aiResponseMap['full_response'];
-
-              Map<String, dynamic> responseData = {};
-
-              if (fullResponse is String) {
-                try {
-                  responseData = jsonDecode(fullResponse);
-                } catch (e) {
+          }
+          
+          if (itineraryList.isNotEmpty) {
+            final parsedActivities = await _parseActivitiesFromAI(itineraryList);
+            
+            if (parsedActivities.isNotEmpty) {
+              _safeSetState(() {
+                _allActivities = parsedActivities;
+                
+                final uniqueDays = parsedActivities.map((a) => a['day'] as int).toSet().toList()..sort();
+                
+                _days = ['All', ...uniqueDays.map((day) => 'Day $day')];
+                
+                _expandedDays = {
+                  for (var day in uniqueDays) day: false,
+                };
+                
+                if (uniqueDays.isNotEmpty) {
+                  _expandedDays[uniqueDays.first] = true;
                 }
-              } else if (fullResponse is Map) {
-                responseData = Map<String, dynamic>.from(fullResponse as Map);
-              }
-
-              if (responseData.isNotEmpty) {
-                dynamic itineraryData = responseData['itinerary'];
-
-                if (itineraryData == null) {
-                  if (responseData.containsKey('days')) {
-                    itineraryData = responseData['days'];
-                  } else if (responseData.containsKey('plan')) {
-                    itineraryData = responseData['plan'];
-                  } else if (responseData.containsKey('trip')) {
-                    itineraryData = responseData['trip'];
-                  }
-                }
-
-                List<dynamic> itineraryList = [];
-
-                if (itineraryData is List) {
-                  itineraryList = itineraryData;
-                } else if (itineraryData != null) {
-                  itineraryList = [itineraryData];
-                } else {
-                  itineraryList = [
-                    {
-                      'day': 1,
-                      'date': widget.fromDate.toIso8601String().split('T')[0],
-                      'activities': [
-                        {
-                          'title': 'Explore ${widget.destination}',
-                          'category': 'Culture',
-                          'description':
-                              'Discover the beauty of ${widget.destination}',
-                          'location': 'City Center',
-                          'cost': 0,
-                          'duration': 4,
-                        },
-                      ],
-                    },
-                  ];
-                }
-
-                if (itineraryList.isNotEmpty) {
-                  List<Map<String, dynamic>> parsedActivities =
-                      await _parseActivitiesFromAI(itineraryList);
-
-                  if (parsedActivities.isEmpty && itineraryList.isNotEmpty) {
-                    for (var dayData in itineraryList) {
-                      if (dayData is Map) {
-                        int dayNum = 1;
-                        if (dayData.containsKey('day')) {
-                          dayNum = dayData['day'] is int
-                              ? (dayData['day'] as int)
-                              : int.tryParse(dayData['day'].toString()) ?? 1;
-                        }
-
-                        if (dayData.containsKey('activities') &&
-                            dayData['activities'] is List) {
-                          continue;
-                        } else {
-                          parsedActivities.add({
-                            'day': dayNum,
-                            'title': 'Day $dayNum in ${widget.destination}',
-                            'category': 'General',
-                            'description':
-                                dayData['description']?.toString() ??
-                                'Explore ${widget.destination}',
-                            'location': widget.destination,
-                            'cost': 0.0,
-                            'duration': 4.0,
-                            'icon': Icons.place,
-                            'image_url': 'assets/placeholder.jpg',
-                          });
-                        }
-                      }
-                    }
-                  }
-
-                  List<int> sortedDaysList = [];
-
-                  _safeSetState(() {
-                    _allActivities = parsedActivities;
-
-                    Set<int> uniqueDays = parsedActivities
-                        .map((a) => a['day'] as int)
-                        .toSet();
-                    sortedDaysList = uniqueDays.toList()..sort();
-
-                    if (sortedDaysList.isEmpty && itineraryList.isNotEmpty) {
-                      sortedDaysList = List.generate(
-                        itineraryList.length,
-                        (i) => i + 1,
-                      );
-                    }
-
-                    _days = ['All', ...sortedDaysList.map((day) => 'Day $day')];
-
-                    _expandedDays = {
-                      for (var day in sortedDaysList) day: false,
-                    };
-
-                    if (sortedDaysList.isNotEmpty) {
-                      _expandedDays[sortedDaysList.first] = true;
-                    }
-
-                    _isLoading = false;
-                  });
-
-                } else {
-                  _safeSetState(() => _isLoading = false);
-                }
-              } else {
-                _safeSetState(() => _isLoading = false);
-              }
+                
+                _isLoading = false;
+              });
             } else {
               _safeSetState(() => _isLoading = false);
             }
@@ -216,22 +134,25 @@ class _TripResultsPageState extends State<TripResultsPage>{
         } else {
           _safeSetState(() => _isLoading = false);
         }
-      }
-    } catch (e) {
-      if (!_isDisposed && mounted) {
+      } else {
         _safeSetState(() => _isLoading = false);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading trip: ${e.toString()}'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
       }
+    } else {
+      _safeSetState(() => _isLoading = false);
+    }
+  } catch (e) {
+    if (!_isDisposed && mounted) {
+      _safeSetState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading trip: ${e.toString()}'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
     }
   }
+}
   
-
   String _extractImageUrl(Map<String, dynamic> activity) {
     final candidateKeys = [
       'image_url',
@@ -283,20 +204,6 @@ class _TripResultsPageState extends State<TripResultsPage>{
 
     return extractedUrl.isNotEmpty ? extractedUrl : 'assets/placeholder.jpg';
   }
-  Future<String?> _getActivityIdByName(String activityName) async {
-  try {
-    final response = await supabase
-        .from('saudi_places')
-        .select('id')
-        .ilike('name', '%$activityName%')
-        .eq('city', widget.destination)
-        .maybeSingle();
-    
-    return response != null ? response['id'].toString() : null;
-  } catch (e) {
-    return null;
-  }
-}
 
   Future<List<Map<String, dynamic>>> _parseActivitiesFromAI(
     List<dynamic> itinerary,
@@ -315,6 +222,10 @@ class _TripResultsPageState extends State<TripResultsPage>{
           day = dayData['day'] is int
               ? (dayData['day'] as int)
               : int.tryParse(dayData['day'].toString()) ?? 1;
+        } else if (dayData.containsKey('day_number')) {
+          day = dayData['day_number'] is int
+              ? (dayData['day_number'] as int)
+              : int.tryParse(dayData['day_number'].toString()) ?? 1;
         }
 
         dynamic dayActivities;
@@ -349,7 +260,7 @@ class _TripResultsPageState extends State<TripResultsPage>{
           }
 
           Map<String, dynamic> typedActivity = Map<String, dynamic>.from(
-            activity as Map,
+            activity,
           );
 
           String title = _extractTitle(typedActivity);
@@ -362,6 +273,7 @@ class _TripResultsPageState extends State<TripResultsPage>{
             'name': title,
             'day': day,
             'title': title,
+            'location_link': typedActivity['location_link'],
             'category': _extractCategory(typedActivity),
             'description': _extractDescription(typedActivity),
             'location': _extractLocation(typedActivity, dayData),
@@ -369,6 +281,8 @@ class _TripResultsPageState extends State<TripResultsPage>{
             'duration': _extractDuration(typedActivity),
             'icon': _getCategoryIcon(_extractCategory(typedActivity)),
             'image_url': imageUrl,
+            'lat': typedActivity['lat'],
+            'lng': typedActivity['lng'],
           });
         }
       }
@@ -547,39 +461,6 @@ class _TripResultsPageState extends State<TripResultsPage>{
         return Icons.museum;
       default:
         return Icons.place;
-    }
-  }
-
-  Future<void> _saveTrip() async {
-    try {
-      final success = await TripService.saveTrip(tripId: widget.tripId);
-      if (!_isDisposed && mounted) {
-        if (success) {
-          _safeSetState(() => _isSaved = true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Trip saved successfully!'),
-              backgroundColor: AppColors.accent,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to save trip'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (!_isDisposed && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving trip: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
@@ -1244,36 +1125,22 @@ Widget _buildActivityCard(Map<String, dynamic> activity) {
 
 void _openTicketWeb(String ticketLink, String activityTitle) async {
   try {
-    if (ticketLink.isNotEmpty) {
-      
-      final Uri url = Uri.parse(ticketLink);
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch $ticketLink';
-      }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Opening ticket for $activityTitle'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No ticket link available'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    final Uri? url = Uri.tryParse(ticketLink);
+
+    if (url == null) {
+      throw 'Invalid URL';
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error opening ticket: ${e.toString()}'),
-        backgroundColor: Colors.red,
-      ),
+
+    await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication,
     );
+
+  } catch (e) {
+    final fallback = Uri.parse(
+      "https://www.google.com/search?q=${Uri.encodeComponent(activityTitle + " tickets")}"
+    );
+    await launchUrl(fallback);
   }
 }
 
@@ -1349,23 +1216,118 @@ void _openTicketWeb(String ticketLink, String activityTitle) async {
     );
   }
 
-  void _viewOnMap(Map<String, dynamic> activity) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening ${activity['title']} on map...'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+  void _viewOnMap(Map<String, dynamic> activity) async {
+  final locationLink = activity['location_link'];
+  
+  if (locationLink != null && locationLink.toString().isNotEmpty) {
+    await _launchUrl(locationLink.toString(), activity['title']);
+  } 
+  else {
+    final lat = activity['lat'];
+    final lng = activity['lng'];
+    final title = activity['title'] ?? '';
+    
+    if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
+      await _openMapWithCoordinates(lat, lng, title);
+    } 
+    else {
+      await _openMapWithQuery(title);
+    }
   }
+}
 
-  void _addActivityForDay(int dayNum) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Add activity feature coming soon for Day $dayNum'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+Future<void> _launchUrl(String url, String title) async {
+  String finalUrl = url;
+  
+  if (url.contains('google.com/maps')) {
+    if (Platform.isAndroid) {
+      if (url.contains('@')) {
+        final match = RegExp(r'@([-\d.]+),([-\d.]+)').firstMatch(url);
+        if (match != null) {
+          final lat = match.group(1);
+          final lng = match.group(2);
+          finalUrl = 'geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(title)})';
+        } else {
+          finalUrl = 'geo:0,0?q=${Uri.encodeComponent(title)}';
+        }
+      } else {
+        finalUrl = 'geo:0,0?q=${Uri.encodeComponent(title)}';
+      }
+    } else if (Platform.isIOS) {
+      finalUrl = 'http://maps.apple.com/?q=${Uri.encodeComponent(title)}';
+    } else {
+      finalUrl = url;
+    }
   }
+  
+  final Uri uri = Uri.parse(finalUrl);
+  
+  try {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }
+  } catch (e) {
+    _showMapErrorDialog('Cannot open map for $title');
+  }
+}
+
+Future<void> _openMapWithCoordinates(double lat, double lng, String title) async {
+  String url;
+  
+  if (Platform.isAndroid) {
+    url = 'geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(title)})';
+  } else if (Platform.isIOS) {
+    url = 'http://maps.apple.com/?q=$lat,$lng';
+  } else {
+    url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+  }
+  
+  final Uri uri = Uri.parse(url);
+  
+  try {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      final fallbackUrl = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+      await launchUrl(Uri.parse(fallbackUrl), mode: LaunchMode.externalApplication);
+    }
+  } catch (e) {
+    _showMapErrorDialog('Cannot open map');
+  }
+}
+
+Future<void> _openMapWithQuery(String query) async {
+  if (query.isEmpty) {
+    _showMapErrorDialog('No location information available');
+    return;
+  }
+  
+  final encodedQuery = Uri.encodeComponent(query);
+  final url = 'https://www.google.com/maps/search/?api=1&query=$encodedQuery';
+  final Uri uri = Uri.parse(url);
+  
+  try {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      _showMapErrorDialog('Cannot open map for $query');
+    }
+  } catch (e) {
+    _showMapErrorDialog('Error opening map');
+  }
+}
+
+void _showMapErrorDialog(String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      duration: const Duration(seconds: 3),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
 
   void _showHeaderMenu(BuildContext context) {
     if (!_isDisposed && mounted) {

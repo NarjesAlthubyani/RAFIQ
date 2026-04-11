@@ -43,6 +43,63 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
     return DateFormat('MMMM yyyy').format(date);
   }
 
+  Widget _buildStepIndicator() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Spacer(),
+            Text(
+              'Step 1/2',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.6,
+            height: 8.5,
+            decoration: BoxDecoration(
+              color: AppColors.greyLight,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: 0.5,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'When do you plan to go?',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,233 +147,234 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildDestinationField(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Destination',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.greyLight),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _destination,
+                                isExpanded: true,
+                                icon: Icon(Icons.arrow_drop_down, color: AppColors.secondary),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _destination = newValue!;
+                                  });
+                                },
+                                items: _destinations.map((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.location_on, color: AppColors.accent, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          value,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 18),
-                      _buildDateRangeSelector(),
+                     
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'From - To',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _selectDate(isFromDate: true),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.white,
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(color: AppColors.accent),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.calendar_today, color: AppColors.textSecondary, size: 20),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedFromDate != null ? _formatDate(_selectedFromDate!) : 'From',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: _selectedFromDate != null ? AppColors.textPrimary : AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _selectDate(isFromDate: false),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.white,
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(color: AppColors.accent),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.calendar_today, color: AppColors.textSecondary, size: 20),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedToDate != null ? _formatDate(_selectedToDate!) : 'To',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: _selectedToDate != null ? AppColors.textPrimary : AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 18),
-                      _buildMonthHeader(),
+                      
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatMonthYear(_currentMonth),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: () => _changeMonth(-1),
+                                icon: Icon(Icons.chevron_left, size: 32, color: AppColors.primary),
+                              ),
+                              IconButton(
+                                onPressed: () => _changeMonth(1),
+                                icon: Icon(Icons.chevron_right, size: 32, color: AppColors.primary),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 12),
+                      
                       _buildCalendar(),
                     ],
                   ),
                 ),
                 const SizedBox(height: 28),
-                _buildNavigationButtons(),
+                
+                Center(
+                  child: SizedBox(
+                    width: 180,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _selectedFromDate != null && _selectedToDate != null
+                          ? () async {
+                              _showLoadingDialog();
+                              try {
+                                final result = await TripService.saveTripRequest(
+                                  destination: _destination,
+                                  fromDate: _selectedFromDate!,
+                                  toDate: _selectedToDate!,
+                                );
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => MyTripPage(
+                                        preferenceId: result['preference_id'],
+                                        destination: _destination,
+                                        fromDate: _selectedFromDate!,
+                                        toDate: _selectedToDate!,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                  _showErrorDialog(e.toString());
+                                }
+                              }
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _selectedFromDate != null && _selectedToDate != null
+                            ? AppColors.secondary
+                            : AppColors.greyLight,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        'Next',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: _selectedFromDate != null && _selectedToDate != null
+                              ? AppColors.white
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            const Spacer(),
-            Text(
-              'Step 1/2',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.5,
-            height: 6,
-            decoration: BoxDecoration(
-              color: AppColors.greyLight,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: 0.5,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'When do you plan to go?',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDestinationField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Destination',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.greyLight),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _destination,
-              isExpanded: true,
-              icon: Icon(Icons.arrow_drop_down, color: AppColors.secondary),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _destination = newValue!;
-                });
-              },
-              items: _destinations.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Row(
-                    children: [
-                      Icon(Icons.location_on, color: AppColors.accent, size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        value,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateRangeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'From - To',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildDateButton(
-                label: 'From',
-                date: _selectedFromDate,
-                onPressed: () => _selectDate(isFromDate: true),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildDateButton(
-                label: 'To',
-                date: _selectedToDate,
-                onPressed: () => _selectDate(isFromDate: false),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateButton({
-    required String label,
-    required DateTime? date,
-    required VoidCallback onPressed,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.accent),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.calendar_today, color: AppColors.textSecondary, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                date != null ? _formatDate(date) : label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: date != null ? AppColors.textPrimary : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMonthHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          _formatMonthYear(_currentMonth),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.secondary,
-          ),
-        ),
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => _changeMonth(-1),
-              icon: Icon(Icons.chevron_left, size: 32, color: AppColors.primary),
-            ),
-            IconButton(
-              onPressed: () => _changeMonth(1),
-              icon: Icon(Icons.chevron_right, size: 32, color: AppColors.primary),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -508,66 +566,6 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
         }
       });
     }
-  }
-
-  Widget _buildNavigationButtons() {
-    return Center(
-      child: SizedBox(
-        width: 180,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: _selectedFromDate != null && _selectedToDate != null
-              ? () async {
-                  _showLoadingDialog();
-                  try {
-                    final result = await TripService.saveTripRequest(
-                      destination: _destination,
-                      fromDate: _selectedFromDate!,
-                      toDate: _selectedToDate!,
-                    );
-                    if (mounted) {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MyTripPage(
-                            preferenceId: result['preference_id'],
-                            destination: _destination,
-                            fromDate: _selectedFromDate!,
-                            toDate: _selectedToDate!,
-                          ),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      Navigator.pop(context);
-                      _showErrorDialog(e.toString());
-                    }
-                  }
-                }
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _selectedFromDate != null && _selectedToDate != null
-                ? AppColors.secondary
-                : AppColors.greyLight,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-          child: Text(
-            'Next',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: _selectedFromDate != null && _selectedToDate != null
-                  ? AppColors.white
-                  : AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   void _showLoadingDialog() {

@@ -68,10 +68,6 @@ class _MyTripPageState extends State<MyTripPage> {
     });
   }
 
-  bool get _hasShopping {
-    return _interests.any((interest) => interest.name == 'Shopping');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -431,35 +427,35 @@ class _MyTripPageState extends State<MyTripPage> {
             ),
           ),
           ElevatedButton(
-  onPressed: () async {
-    try {
-      final result = await TripService.saveTripDetails(
-        preferenceId: _preferenceId,
-        budgetRange: _selectedBudgetRange!,
-        selectedInterests: selectedInterests,
-      );
+            onPressed: () async {
+              try {
+                final result = await TripService.saveTripDetails(
+                  preferenceId: _preferenceId,
+                  budgetRange: _selectedBudgetRange!,
+                  selectedInterests: selectedInterests,
+                );
 
-      if (!mounted) return;
+                if (!mounted) return;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TripLoadingPage(
-            tripId: result['trip']['trip_id'],
-            destination: _destination,
-            fromDate: _fromDate,
-            toDate: _toDate,
-            budgetRange: _selectedBudgetRange!,
-            selectedInterests: selectedInterests,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        _showErrorDialog(e.toString());
-      }
-    }
-  },
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TripLoadingPage(
+                      tripId: result['trip']['trip_id'],
+                      destination: _destination,
+                      fromDate: _fromDate,
+                      toDate: _toDate,
+                      budgetRange: _selectedBudgetRange!,
+                      selectedInterests: selectedInterests,
+                    ),
+                  ),
+                );
+              } catch (e) {
+                if (mounted) {
+                  _showErrorDialog(e.toString());
+                }
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
               shape: RoundedRectangleBorder(
@@ -475,16 +471,6 @@ class _MyTripPageState extends State<MyTripPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
       ),
     );
   }

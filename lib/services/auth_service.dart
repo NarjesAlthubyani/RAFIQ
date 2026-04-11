@@ -23,7 +23,7 @@ class AuthService {
 
     if (response.user != null) {
       await supabase.from('users').insert({
-        'user_id': response.user!.id,
+        'user_id': response.user!.id, 
         'email': email,
         'name': name,
         'created_at': DateTime.now().toIso8601String(),
@@ -49,9 +49,14 @@ class AuthService {
   }
 
   static User? get currentUser => supabase.auth.currentUser;
+  
   static bool get isLoggedIn => currentUser != null;
+  
   static Stream<AuthState> get authState => supabase.auth.onAuthStateChange;
+  
   static Future<void> resetPassword(String email) async {
     await supabase.auth.resetPasswordForEmail(email);
   }
+  
+  static String? get currentUserId => supabase.auth.currentUser?.id;
 }

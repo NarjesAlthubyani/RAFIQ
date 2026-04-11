@@ -6,12 +6,9 @@ import 'package:rafiq/theme/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
   // Load environment variables from .env file
   await dotenv.load();
-  
   await SupabaseConfig.initialize();
-  
   runApp(const RafiqApp());
 }
 
