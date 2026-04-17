@@ -1,22 +1,30 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-// Data Model for Activity
+// Data for Activity
 class Activity {
   final String title;
   final String category;
   final String? duration;
-  final String imageUrl;
-  final String buttonText;
-  final IconData? buttonIcon;
+  final String? imageUrl;
+  final String? detailsUrl;
+  final double? distanceKm;
+  final bool ticketBooking;
+  final String? ticketLink;
 
   Activity({
     required this.title,
     required this.category,
     this.duration,
-    required this.imageUrl,
-    required this.buttonText,
-    this.buttonIcon,
+    this.imageUrl,
+    this.detailsUrl,
+    this.distanceKm,
+    required this.ticketBooking,
+    this.ticketLink,
   });
 }
 
@@ -28,80 +36,207 @@ class NearbyPage extends StatefulWidget {
 }
 
 class _NearbyPageState extends State<NearbyPage> {
-  final List<Activity> _allActivities = [
-    Activity(
-      title: 'Mall of Arabia',
-      category: 'Shopping Malls',
-      imageUrl: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?q=80&w=1000&auto=format&fit=crop',
-      buttonText: 'View on map',
-      buttonIcon: Icons.location_on,
-      
-    ),
-    Activity(
-      title: 'Jeddah Beauty show',
-      category: 'Event',
-      duration: 'Duration More3 than 3 hours',
-      imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop',
-      buttonText: 'View Details',
-    ),
-    
-  ];
+  static const String _baseUrl = 'http://10.0.2.2:8000'; // Emulator
 
-  // State for filtering
-  List<Activity> _filteredActivities = [];
+  List<Activity> _activities = [];
+  bool _isLoading = false;
+  String? _error;
+
+  String _selectedDuration = '';
+
   String _searchQuery = '';
-  String _selectedDuration = ''; // Empty means no filter
 
   @override
   void initState() {
     super.initState();
-    _filteredActivities = _allActivities;
+    _fetchActivities(); 
   }
 
-  void _applyFilters() {
+  Future<Position?> _tryGetUserLocation() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) {
+        await Geolocator.openLocationSettings();
+        return null;
+      }
+
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _bucketToUi(String bucket) {
+    switch (bucket) {
+      case '<1h':
+        return '<1 hour';
+      case '1-2h':
+        return '1-2 hours';
+      case '2-3h':
+        return '2-3 hours';
+      case '3h+':
+        return 'More than 3 hours';
+      default:
+        return '';
+    }
+  }
+
+  //  للباك-اند available_minutes
+  int? _uiDurationToMinutes(String ui) {
+  switch (ui.trim()) {
+    case '<1 hour':
+      return 60;
+    case '1-2 hours':
+      return 120;
+    case '2-3 hours':
+      return 180;
+    case 'More than 3 hours':
+      return 9999; 
+    default:
+      return null;
+  }
+}
+
+  Future<void> _fetchActivities({int? availableMinutes}) async {
     setState(() {
-      _filteredActivities = _allActivities.where((activity) {
-        final matchesSearch = activity.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            activity.category.toLowerCase().contains(_searchQuery.toLowerCase());
-        
-        final matchesDuration = _selectedDuration.isEmpty || 
-            (activity.duration != null && activity.duration == _selectedDuration);
-            
-        return matchesSearch && matchesDuration;
-      }).toList();
+      _isLoading = true;
+      _error = null;
     });
+
+    try {
+      //  موقع اليوزر 
+      final pos = await _tryGetUserLocation();
+      final lat = pos?.latitude ?? 21.55;
+      final lng = pos?.longitude ?? 39.17;
+
+      print('User location: $lat, $lng');
+      
+
+      final params = <String, String>{
+        'lat': lat.toString(),
+        'lng': lng.toString(),
+        'limit': '50',
+      };
+
+      if (availableMinutes != null) {
+        params['available_minutes'] = availableMinutes.toString();
+      }
+
+      final uri = Uri.parse('$_baseUrl/activities').replace(queryParameters: params);
+     
+
+      final res = await http.get(uri);
+      
+      if (res.statusCode != 200) {
+        throw Exception('HTTP ${res.statusCode}: ${res.body}');
+      }
+
+      final List data = jsonDecode(res.body);
+
+    final fetched = data.map<Activity>((item) {
+  final title = (item['title'] ?? '').toString();
+  final category = (item['category'] ?? '').toString();
+  final imageUrl = item['imageUrl']?.toString();
+  final detailsUrl = item['detailsUrl']?.toString();
+  final ticketLink = item['ticketLink']?.toString();
+
+  final ticketBookingRaw = item['ticketBooking'];
+  final ticketBooking = ticketBookingRaw == true ||
+      ticketBookingRaw?.toString().toLowerCase() == 'true';
+
+  final distanceKm = item['distanceKm'] != null
+      ? double.tryParse(item['distanceKm'].toString())
+      : null;
+
+  final bucket = (item['durationBucket'] ?? '').toString();
+  final durationUi = _bucketToUi(bucket);
+
+  return Activity(
+    title: title,
+    category: category,
+    duration: durationUi,
+    imageUrl: imageUrl,
+    detailsUrl: detailsUrl,
+    distanceKm: distanceKm,
+    ticketBooking: ticketBooking,
+    ticketLink: ticketLink,
+  );
+}).toList();
+
+      setState(() {
+        _activities = fetched;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+        _activities = [];
+      });
+    }
+  }
+
+  // بحث محلي فقط (بدون فلترة )
+  List<Activity> get _visibleActivities {
+    final q = _searchQuery.toLowerCase().trim();
+    if (q.isEmpty) return _activities;
+
+    return _activities.where((a) {
+      return a.title.toLowerCase().contains(q) ||
+          a.category.toLowerCase().contains(q);
+    }).toList();
   }
 
   void _onSearchChanged(String query) {
-    _searchQuery = query;
-    _applyFilters();
+    setState(() => _searchQuery = query);
   }
 
   void _showFilters() async {
     final result = await showModalBottomSheet<String>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => FiltersBottomSheet(initialSelection: _selectedDuration),
+      builder: (context) => FiltersBottomSheet(
+        initialSelection: _selectedDuration,
+      ),
     );
 
-    if (result != null) {
-      setState(() {
-        _selectedDuration = result == 'CLEAR' ? '' : result;
-        _applyFilters();
-      });
+    if (result == null) return;
+
+    // Clear
+    if (result == 'CLEAR') {
+      setState(() => _selectedDuration = '');
+      // إعادة تحميل بدون فلتر وقت
+      await _fetchActivities();
+      return;
     }
+
+    // Apply
+    setState(() => _selectedDuration = result);
+
+    final minutes = _uiDurationToMinutes(result);
+
+    
+    await _fetchActivities(availableMinutes: minutes);
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
-
         elevation: 0,
-       
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,16 +251,16 @@ class _NearbyPageState extends State<NearbyPage> {
                     height: 50,
                     decoration: BoxDecoration(
                       color: AppColors.white,
-
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: AppColors.accent),
                     ),
                     child: TextField(
                       onChanged: _onSearchChanged,
                       decoration: const InputDecoration(
-                        hintText: 'Discover activates',
-                        hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                        prefixIcon: Icon(Icons.search,color: AppColors.accent),
+                        hintText: 'Discover activities',
+                        hintStyle: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 14),
+                        prefixIcon: Icon(Icons.search, color: AppColors.accent),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -139,13 +274,13 @@ class _NearbyPageState extends State<NearbyPage> {
                     height: 50,
                     width: 50,
                     decoration: BoxDecoration(
-                     color: AppColors.primary,
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                         Icon(Icons.tune, color: AppColors.white),
+                        Icon(Icons.tune, color: AppColors.white),
                         if (_selectedDuration.isNotEmpty)
                           Positioned(
                             top: 8,
@@ -166,7 +301,9 @@ class _NearbyPageState extends State<NearbyPage> {
               ],
             ),
           ),
+
           const SizedBox(height: 24),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -177,42 +314,80 @@ class _NearbyPageState extends State<NearbyPage> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                     color: AppColors.black,
+                    color: AppColors.black,
                   ),
                 ),
                 if (_selectedDuration.isNotEmpty)
                   Text(
                     'Filter: $_selectedDuration',
-                    style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
               ],
             ),
           ),
+
           const SizedBox(height: 16),
-          // Activities List
-          Expanded(
-            child: _filteredActivities.isEmpty
-                ? const Center(child: Text('No activities found matching your criteria.'))
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    itemCount: _filteredActivities.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final activity = _filteredActivities[index];
-                      return ActivityCard(
-                        title: activity.title,
-                        category: activity.category,
-                        duration: activity.duration,
-                        imageUrl: activity.imageUrl,
-                        buttonText: activity.buttonText,
-                        buttonIcon: activity.buttonIcon,
-                      );
-                    },
-                  ),
-          ),
+
+          if (_isLoading)
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_error != null)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Failed to load activities\n$_error',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        final minutes = _uiDurationToMinutes(_selectedDuration);
+                        _fetchActivities(availableMinutes: minutes);
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: _visibleActivities.isEmpty
+                  ? const Center(
+                      child: Text('No activities found matching your criteria.'),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: _visibleActivities.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final activity = _visibleActivities[index];
+                        return ActivityCard(            
+                            title: activity.title,
+                            category: activity.category,
+                            duration: activity.duration,
+                            imageUrl: activity.imageUrl,
+                            detailsUrl: activity.detailsUrl,
+                            distanceKm: activity.distanceKm,
+                            ticketBooking: activity.ticketBooking,
+                            ticketLink: activity.ticketLink,
+                             );
+                        
+                      },
+                    ),
+            ),
         ],
       ),
-      
     );
   }
 }
@@ -221,25 +396,29 @@ class ActivityCard extends StatelessWidget {
   final String title;
   final String category;
   final String? duration;
-  final String imageUrl;
-  final String buttonText;
-  final IconData? buttonIcon;
+  final String? imageUrl;
+  final String? detailsUrl;
+  final double? distanceKm;
+  final bool ticketBooking;
+  final String? ticketLink;
 
   const ActivityCard({
-    super.key,
-    required this.title,
-    required this.category,
-    this.duration,
-    required this.imageUrl,
-    required this.buttonText,
-    this.buttonIcon,
+     super.key,
+      required this.title,
+      required this.category,
+      this.duration,
+      this.imageUrl,
+      this.detailsUrl,
+      this.distanceKm,
+      required this.ticketBooking,
+      this.ticketLink,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-         color: AppColors.accent,
+        color: AppColors.accent,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -252,32 +431,35 @@ class ActivityCard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Image sitting inside the green box
           Padding(
-            padding: const EdgeInsets.all(4.0), // Padding to show green edges around image
+            padding: const EdgeInsets.all(4.0),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10), 
-              child: Image.network(
-                imageUrl,
-                width: double.infinity,
-                height: 160, 
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 160,
-                  color: AppColors.greyLight,
-                  child: const Icon(Icons.image_not_supported),
-                ),
-              ),
+              borderRadius: BorderRadius.circular(10),
+                    child: (imageUrl != null && imageUrl!.isNotEmpty)
+                        ? Image.network(
+                            imageUrl!,
+                            width: double.infinity,
+                            height: 160,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              height: 160,
+                              color: AppColors.greyLight,
+                              child: const Icon(Icons.image_not_supported),
+                            ),
+                          )
+                        : Container(
+                            height: 160,
+                            color: AppColors.greyLight,
+                            child: const Icon(Icons.image_not_supported),
+                          ),
             ),
           ),
-          // (the part of the green box that extends below the image)
           Padding(
             padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Title and Category
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -294,23 +476,42 @@ class ActivityCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.shopping_bag_outlined, color: AppColors.white, size: 14),
+                          const Icon(Icons.shopping_bag_outlined,
+                              color: AppColors.white, size: 14),
                           const SizedBox(width: 4),
                           Text(
                             category,
-                            style: const TextStyle(color: AppColors.white, fontSize: 12),
+                            style: const TextStyle(
+                                color: AppColors.white, fontSize: 12),
                           ),
                         ],
                       ),
-                      if (duration != null) ...[
+                      if (distanceKm != null) ...[
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            const Icon(Icons.access_time, color: AppColors.white, size: 14),
+                            const Icon(Icons.location_on,
+                              color: AppColors.white, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                               '${distanceKm!.toStringAsFixed(1)} km away',
+                               style: const TextStyle(
+                                  color: AppColors.white, fontSize: 11),
+                                     ),
+                                      ],
+                                       ),
+                                       ],
+                      if (duration != null && duration!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time,
+                                color: AppColors.white, size: 14),
                             const SizedBox(width: 4),
                             Text(
                               duration!,
-                              style: const TextStyle(color: AppColors.white, fontSize: 11),
+                              style: const TextStyle(
+                                  color: AppColors.white, fontSize: 11),
                             ),
                           ],
                         ),
@@ -318,36 +519,85 @@ class ActivityCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Action Button
-                ElevatedButton(
-  onPressed: () {
-    print('$buttonText pressed');
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: AppColors.primary,
-    foregroundColor: AppColors.white,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-  ),
-  child: Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (buttonIcon != null) ...[
-        Icon(buttonIcon, size: 14),
-        const SizedBox(width: 4),
-      ],
-      Text(
-        buttonText,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+               Column(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    if (detailsUrl != null && detailsUrl!.isNotEmpty)
+      ElevatedButton(
+        onPressed: () async {
+          final uri = Uri.parse(detailsUrl!);
+          final launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+
+          if (!launched) {
+            print('Could not launch $detailsUrl');
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.location_on, size: 14),
+            SizedBox(width: 4),
+            Text(
+              'View on map',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    if (ticketBooking && ticketLink != null && ticketLink!.isNotEmpty) ...[
+      const SizedBox(height: 8),
+      ElevatedButton(
+        onPressed: () async {
+          final uri = Uri.parse(ticketLink!);
+          final launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+
+          if (!launched) {
+            print('Could not launch $ticketLink');
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.white,
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.confirmation_num_outlined, size: 14),
+            SizedBox(width: 4),
+            Text(
+              'Book Ticket',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     ],
-  ),
-),             
+  ],
+),
               ],
             ),
           ),
@@ -400,7 +650,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
           const Center(
             child: Text(
               'Filters',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.accent),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.accent),
             ),
           ),
           const SizedBox(height: 24),
@@ -408,7 +661,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
             padding: EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(
               'Suggested duration',
-              style: TextStyle(fontSize:18,fontWeight: FontWeight.w600, color: AppColors.accent),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.accent),
             ),
           ),
           const SizedBox(height: 16),
@@ -434,8 +690,11 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                   onPressed: () => Navigator.pop(context, 'CLEAR'),
                   child: const Text(
                     'Clear filters',
-                    style: TextStyle(fontSize: 16,color: AppColors.accent
-                     ,decoration: TextDecoration.underline),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.accent,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -443,14 +702,16 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context, _tempSelection),
                     style: ElevatedButton.styleFrom(
-                     backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: const Text('Show results',
-                    style: TextStyle(
-                   fontSize: 16 ),
+                    child: const Text(
+                      'Show results',
+                      style: TextStyle(fontSize: 16),
                     ),
                   ),
                 ),
@@ -483,7 +744,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
         child: Text(
           label,
           style: TextStyle(
-           color: AppColors.accent,
+            color: AppColors.accent,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
