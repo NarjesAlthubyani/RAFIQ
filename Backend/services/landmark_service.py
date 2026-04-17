@@ -1,10 +1,7 @@
 import os
 import requests
-from dotenv import load_dotenv
 from Backend.adapters.clip_recognizer import CLIPLandmarkRecognizer
 
-env_path = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
-load_dotenv(env_path)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")  
