@@ -1,40 +1,13 @@
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:rafiq/services/auth_service.dart';
+import '../services/auth_service.dart';
 import '../models/user.dart';
 import '../models/trip_plan.dart';
 import '../models/activity.dart';
-import 'trip_planner.dart';
 
 final supabase = Supabase.instance.client;
 
 class TripService {
-  static TripPlanner get _tripPlanner => TripPlanner();
-  
-  static Future<TripPlan> createSingleTrip({
-    required AppUser user,
-    required String city,
-    required DateTime fromDate,
-    required DateTime toDate,
-    required double budget,
-    required List<String> interests,
-    required List<Map<String, dynamic>> places,
-    required List<Map<String, dynamic>> foodVenues,
-  }) async {
-    
-    final tripPlan = await _tripPlanner.createTripPlan(
-      user: user,
-      city: city,
-      fromDate: fromDate,
-      toDate: toDate,
-      places: places.map((p) => Activity.fromJson(p)).toList(),
-      foodVenues: foodVenues.map((f) => Activity.fromJson(f)).toList(),
-      interests: interests,
-      budget: budget,
-    );
-    
-    return tripPlan;
-  }
   
   static Future<Map<String, dynamic>> saveTripRequest({
     required String destination,
@@ -70,7 +43,7 @@ class TripService {
     final user = AuthService.currentUser;
     if (user == null) throw Exception('User not logged in');
 
-    final double budget = _parseBudget(budgetRange);
+    final double budget = parseBudget(budgetRange);
 
     await supabase
         .from('preferences')
@@ -90,105 +63,54 @@ class TripService {
         .single();
 
     final preference = Map<String, dynamic>.from(preferenceRaw);
-    final city = preference['city'];
-    final fromDate = DateTime.parse(preference['start_date']);
-    final toDate = DateTime.parse(preference['end_date']);
-
-    final places = await _fetchPlacesFromDatabase(city);
-    final foodVenues = await _fetchFoodVenuesFromDatabase(city);
-  
-    final appUser = AppUser(
-      userId: user.id,
-      name: user.email?.split('@').first ?? 'User',
-      email: user.email ?? '',
-      password: '',
-    );
-    
-    final tripPlan = await createSingleTrip(
-      user: appUser,
-      city: city,
-      fromDate: fromDate,
-      toDate: toDate,
-      budget: budget,
-      interests: selectedInterests,
-      places: places,
-      foodVenues: foodVenues,
-    );
     
     final tripRaw = await supabase
         .from('trip_plans')
         .insert({
           'user_id': user.id,
           'preference_id': preferenceId,
-          'city': city,
+          'city': preference['city'],
           'budget': budget,
           'days': preference['days'],
           'start_date': preference['start_date'],
           'end_date': preference['end_date'],
-          'status': 'completed',
+          'status': 'pending',
         })
         .select()
         .single();
     
-    final tripId = tripRaw['trip_id'];
- 
-    await supabase.from('ai_responses').insert({
-      'trip_id': tripId, 
-      'user_id': user.id,
-      'full_response': jsonEncode(tripPlan.toJson()),
-      'summary': tripPlan.summary,
-      'total_cost': tripPlan.totalEstimatedCost,
-    });
-    
     return {
       'preference': preference,
       'trip': tripRaw,
-      'ai_plan': tripPlan.toJson(),
     };
   }
+
+  static Future<void> saveAIPlan({
+  required String tripId,
+  required Map<String, dynamic> plan,
+}) async {
+  final user = AuthService.currentUser;
+  if (user == null) throw Exception('User not logged in');
   
-  static Future<List<Map<String, dynamic>>> _fetchPlacesFromDatabase(String city) async {
-    final response = await supabase
-        .from('saudi_places')
-        .select('*')
-        .eq('city', city)
-        .not('category', 'ilike', 'Restaurant');
+  try {
+    await supabase.from('ai_responses').upsert({
+      'trip_id': tripId,
+      'user_id': user.id,
+      'full_response': jsonEncode(plan),
+      'summary': plan['summary'] ?? 'Trip plan generated',
+      'total_cost': (plan['total_cost'] ?? 0).toDouble(),
+      'created_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'trip_id');
     
-    return List<Map<String, dynamic>>.from(response);
+    await supabase
+        .from('trip_plans')
+        .update({'status': 'completed'})
+        .eq('trip_id', tripId);
+        
+  } catch (e) {
+    rethrow;
   }
-  
-  static Future<List<Map<String, dynamic>>> _fetchFoodVenuesFromDatabase(String city) async {
-    final seen = <String>{};
-    final merged = <Map<String, dynamic>>[];
-
-    void addAll(dynamic response) {
-      if (response is! List) return;
-      for (final row in response) {
-        if (row is! Map) continue;
-        final m = Map<String, dynamic>.from(row);
-        final key = '${m['id'] ?? m['place_id'] ?? m['name']}';
-        if (seen.add(key)) merged.add(m);
-      }
-    }
-
-    addAll(
-      await supabase
-          .from('saudi_places')
-          .select('*')
-          .eq('city', city)
-          .ilike('category', '%Restaurant%'),
-    );
-    for (final pattern in ['%Cafe%', '%Bakery%', '%Coffee%']) {
-      addAll(
-        await supabase
-            .from('saudi_places')
-            .select('*')
-            .eq('city', city)
-            .ilike('category', pattern),
-      );
-    }
-    return merged;
-  }
+}
 
   static Future<List<Map<String, dynamic>>> getUserTrips() async {
     final user = AuthService.currentUser;
@@ -221,9 +143,7 @@ class TripService {
           .eq('trip_id', tripId)
           .maybeSingle();
 
-      if (tripResponse == null) {
-        return null;
-      }
+      if (tripResponse == null) return null;
       
       final aiResponses = await supabase
           .from('ai_responses')
@@ -234,20 +154,6 @@ class TripService {
       Map<String, dynamic> tripData = Map<String, dynamic>.from(tripResponse);
       tripData['ai_responses'] = aiResponses;
       
-      final preferenceId = tripData['preference_id'];
-      
-      if (preferenceId != null) {
-        final interestsResponse = await supabase
-            .from('interests')
-            .select('selected_interests')
-            .eq('preference_id', preferenceId)
-            .maybeSingle();
-        
-        if (interestsResponse != null) {
-          tripData['interests'] = interestsResponse;
-        }
-      }
-      
       return tripData;
     } catch (e) {
       return null;
@@ -256,30 +162,11 @@ class TripService {
 
   static Future<bool> deleteTrip(String tripId) async {
     try {
-      await supabase
-          .from('trip_plans')
-          .delete()
-          .eq('trip_id', tripId);
+      await supabase.from('trip_plans').delete().eq('trip_id', tripId);
       return true;
     } catch (e) {
       return false;
     }
-  }
-
-  static Future<String?> getImageByName(String name, String city) async {
-    try {
-      final place = await supabase
-          .from('saudi_places')
-          .select('image_url')
-          .ilike('name', '%$name%')
-          .eq('city', city)
-          .maybeSingle();
-
-      if (place != null && place['image_url'] != null) {
-        return place['image_url'];
-      }
-    } catch (e) {}
-    return null;
   }
 
   static Future<Map<String, dynamic>> getTicketInfo(String activityName) async {
@@ -290,55 +177,19 @@ class TripService {
           .eq('name', activityName)
           .maybeSingle();
       
-      if (response == null) {
-        final allPlaces = await supabase
-            .from('saudi_places')
-            .select('name, ticket_booking, ticket_link');
-        
-        for (var place in allPlaces) {
-          String placeName = place['name']?.toString() ?? '';
-          if (activityName.toLowerCase().contains(placeName.toLowerCase()) ||
-              placeName.toLowerCase().contains(activityName.toLowerCase())) {
-            response = place;
-            break;
-          }
-        }
-      } 
-      
-      if (response != null) {
-        String? ticketLink = response['ticket_link']?.toString();
-        bool hasTicket = ticketLink != null && ticketLink.isNotEmpty;
-        
+      if (response != null && response['ticket_link'] != null) {
         return {
-          'hasTicket': hasTicket,
-          'ticketLink': ticketLink,
+          'hasTicket': true,
+          'ticketLink': response['ticket_link'],
         };
       }
-      
       return {'hasTicket': false, 'ticketLink': null};
     } catch (e) {
       return {'hasTicket': false, 'ticketLink': null};
     }
   }
 
-  static Future<bool> saveTrip({required String tripId, String? notes}) async {
-    final user = AuthService.currentUser;
-    if (user == null) return false;
-
-    try {
-      await supabase.from('saved_trips').insert({
-        'user_id': user.id,
-        'trip_id': tripId,
-        'notes': notes,
-        'saved_at': DateTime.now().toIso8601String(),
-      });
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-  
-  static double _parseBudget(String budgetRange) {
+  static double parseBudget(String budgetRange) {
     if (budgetRange == '10000+') return 10000.0;
     if (budgetRange == '5000+') return 5000.0;
     if (budgetRange == '3000+') return 3000.0;

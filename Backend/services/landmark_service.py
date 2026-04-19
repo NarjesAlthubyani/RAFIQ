@@ -2,7 +2,6 @@ import os
 import requests
 from Backend.adapters.clip_recognizer import CLIPLandmarkRecognizer
 
-
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")  
 
@@ -10,7 +9,6 @@ recognizer = CLIPLandmarkRecognizer(
     ref_root=os.path.join(os.path.dirname(__file__), "..", "ref_images")
 )
 THRESHOLD = 0.55
-
 
 def get_landmark_info(name: str):
     url = f"{SUPABASE_URL}/rest/v1/landmarks?name=eq.{name}&select=name,description"
@@ -25,7 +23,6 @@ def get_landmark_info(name: str):
         if data:
             return data[0]
     return None
-
 
 def recognize_landmark(filename: str, image_bytes: bytes):
     

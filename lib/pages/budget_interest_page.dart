@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:rafiq/theme/app_colors.dart';
-import 'package:rafiq/pages/trip_loading_page.dart';
-import 'package:rafiq/services/trip_service.dart';
+import 'package:provider/provider.dart';
+import '../controllers/budget_interest_controller.dart';
+import '../theme/app_colors.dart';
+import 'trip_loading_page.dart';
 
-class MyTripPage extends StatefulWidget {
+class BudgetInterestPage extends StatelessWidget {
   final String preferenceId;
   final String destination;
   final DateTime fromDate;
   final DateTime toDate;
 
-  const MyTripPage({
+  const BudgetInterestPage({
     Key? key,
     required this.preferenceId,
     required this.destination,
@@ -18,58 +19,27 @@ class MyTripPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _MyTripPageState createState() => _MyTripPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => MyTripController()
+        ..initialize(
+          prefId: preferenceId,
+          dest: destination,
+          from: fromDate,
+          to: toDate,
+        ),
+      child: const _MyTripView(),
+    );
+  }
 }
 
-class _MyTripPageState extends State<MyTripPage> {
-  late String _preferenceId;
-  late String _destination;
-  late DateTime _fromDate;
-  late DateTime _toDate;
-
-  List<Interest> _interests = [];
-
-  String? _selectedBudgetRange = '2000 - 5000';
-  final List<String> _budgetOptions = [
-    '500 - 1000',
-    '1000 - 2000',
-    '2000 - 5000',
-    '5000 - 10000',
-    '10000+'
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _preferenceId = widget.preferenceId;
-    _destination = widget.destination;
-    _fromDate = widget.fromDate;
-    _toDate = widget.toDate;
-    
-    _initializeInterests();
-  }
-
-  void _initializeInterests() {
-    List<Interest> baseInterests = [
-      Interest(name: 'Culture', isSelected: false),
-      Interest(name: 'Food', isSelected: false),
-      Interest(name: 'History', isSelected: false),
-      Interest(name: 'Entertainment', isSelected: false),
-      Interest(name: 'Adventure', isSelected: false),
-      Interest(name: 'Nature', isSelected: false),
-    ];
-
-    if (_destination != 'AlUla') {
-      baseInterests.insert(3, Interest(name: 'Shopping', isSelected: false));
-    }
-
-    setState(() {
-      _interests = baseInterests;
-    });
-  }
+class _MyTripView extends StatelessWidget {
+  const _MyTripView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<MyTripController>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -94,9 +64,9 @@ class _MyTripPageState extends State<MyTripPage> {
             children: [
               _buildStepIndicator(context),
               const SizedBox(height: 28),
-              _buildCard(context),
+              _buildCard(context, controller),
               const SizedBox(height: 28),
-              _buildSubmitButton(),
+              _buildSubmitButton(context, controller),
             ],
           ),
         ),
@@ -145,7 +115,7 @@ class _MyTripPageState extends State<MyTripPage> {
     );
   }
 
-  Widget _buildCard(BuildContext context) {
+  Widget _buildCard(BuildContext context, MyTripController controller) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -165,6 +135,7 @@ class _MyTripPageState extends State<MyTripPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 4),
+
           Text(
             'Budget Range',
             style: TextStyle(
@@ -174,8 +145,9 @@ class _MyTripPageState extends State<MyTripPage> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildBudgetDropdown(),
+          _buildBudgetDropdown(controller),
           const SizedBox(height: 22),
+
           Text(
             'Select your interests',
             style: TextStyle(
@@ -193,7 +165,8 @@ class _MyTripPageState extends State<MyTripPage> {
             ),
           ),
           const SizedBox(height: 18),
-          _interests.isEmpty
+
+          controller.interests.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
@@ -206,52 +179,49 @@ class _MyTripPageState extends State<MyTripPage> {
               : Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: List.generate(_interests.length, (index) {
-                    final interest = _interests[index];
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _interests[index] = interest.copyWith(
-                            isSelected: !interest.isSelected,
-                          );
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: interest.isSelected
-                              ? AppColors.accent.withOpacity(0.08)
-                              : AppColors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.accent,
-                            width: 1.6,
+                  children: List.generate(
+                    controller.interests.length,
+                    (index) {
+                      final interest = controller.interests[index];
+                      return GestureDetector(
+                        onTap: () => controller.toggleInterest(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
                           ),
-                        ),
-                        child: Text(
-                          interest.name,
-                          style: TextStyle(
-                            fontSize: 16,
+                          decoration: BoxDecoration(
                             color: interest.isSelected
-                                ? AppColors.secondary
-                                : AppColors.textPrimary,
-                            fontWeight: FontWeight.w500,
+                                ? AppColors.accent.withOpacity(0.08)
+                                : AppColors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.accent,
+                              width: 1.6,
+                            ),
+                          ),
+                          child: Text(
+                            interest.name,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: interest.isSelected
+                                  ? AppColors.secondary
+                                  : AppColors.textPrimary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }),
-                ),     
+                      );
+                    },
+                  ),
+                ),
         ],
       ),
     );
   }
 
-  Widget _buildBudgetDropdown() {
+  Widget _buildBudgetDropdown(MyTripController controller) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -277,18 +247,16 @@ class _MyTripPageState extends State<MyTripPage> {
           Expanded(
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: _selectedBudgetRange,
+                value: controller.selectedBudgetRange,
                 isExpanded: true,
                 icon: Icon(
                   Icons.arrow_drop_down,
                   color: AppColors.textSecondary,
                 ),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedBudgetRange = newValue;
-                  });
+                onChanged: (value) {
+                  if (value != null) controller.setBudget(value);
                 },
-                items: _budgetOptions.map((value) {
+                items: controller.budgetOptions.map((value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(
@@ -309,17 +277,18 @@ class _MyTripPageState extends State<MyTripPage> {
     );
   }
 
-  Widget _buildSubmitButton() {
-    final selectedCount = _interests.where((i) => i.isSelected).length;
-
+  Widget _buildSubmitButton(
+      BuildContext context, MyTripController controller) {
     return Center(
       child: SizedBox(
         width: 200,
         height: 52,
         child: ElevatedButton(
-          onPressed: selectedCount > 0 ? _showReviewDialog : null,
+          onPressed: controller.canSubmit
+              ? () => _showReviewDialog(context, controller)
+              : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: selectedCount > 0
+            backgroundColor: controller.canSubmit
                 ? AppColors.secondary
                 : AppColors.greyLight,
             shape: RoundedRectangleBorder(
@@ -331,7 +300,7 @@ class _MyTripPageState extends State<MyTripPage> {
             'Submit',
             style: TextStyle(
               fontSize: 18,
-              color: selectedCount > 0
+              color: controller.canSubmit
                   ? AppColors.white
                   : AppColors.textSecondary,
             ),
@@ -341,12 +310,8 @@ class _MyTripPageState extends State<MyTripPage> {
     );
   }
 
-  void _showReviewDialog() {
-    final selectedInterests = _interests
-        .where((i) => i.isSelected)
-        .map((i) => i.name)
-        .toList();
-
+  void _showReviewDialog(
+      BuildContext context, MyTripController controller) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -367,41 +332,29 @@ class _MyTripPageState extends State<MyTripPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Destination: $_destination',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
+              'Destination: ${controller.reviewDestination}',
+              style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              'Budget: SAR $_selectedBudgetRange',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
+              'Budget: SAR ${controller.reviewBudget}',
+              style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              'Dates: ${_formatDate(_fromDate)} - ${_formatDate(_toDate)}',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
+              'Dates: ${controller.reviewDates}',
+              style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 12),
             Text(
               'Selected Interests',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
+              style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 4,
-              children: selectedInterests
+              children: controller.reviewInterests
                   .map(
                     (s) => Chip(
                       label: Text(
@@ -427,55 +380,51 @@ class _MyTripPageState extends State<MyTripPage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () async {
-              try {
-                final result = await TripService.saveTripDetails(
-                  preferenceId: _preferenceId,
-                  budgetRange: _selectedBudgetRange!,
-                  selectedInterests: selectedInterests,
-                );
+  onPressed: () async {
+    final success = await controller.submitTrip();
 
-                if (!mounted) return;
+    if (!context.mounted) return;
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TripLoadingPage(
-                      tripId: result['trip']['trip_id'],
-                      destination: _destination,
-                      fromDate: _fromDate,
-                      toDate: _toDate,
-                      budgetRange: _selectedBudgetRange!,
-                      selectedInterests: selectedInterests,
-                    ),
-                  ),
-                );
-              } catch (e) {
-                if (mounted) {
-                  _showErrorDialog(e.toString());
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Create Trip Plan',
-              style: TextStyle(
-                color: AppColors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+    Navigator.pop(context); // close dialog AFTER submit
+
+    if (success) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TripLoadingPage(
+            tripId: controller.tripId,
+            destination: controller.destination,
+            fromDate: controller.fromDate,
+            toDate: controller.toDate,
+            budgetRange: controller.selectedBudgetRange!,
+            selectedInterests: controller.selectedInterests,
           ),
+        ),
+      );
+    } else if (controller.errorMessage != null) {
+      _showErrorDialog(context, controller.errorMessage!);
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: AppColors.secondary,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+  ),
+  child: Text(
+    'Create Trip Plan',
+    style: TextStyle(
+      color: AppColors.white,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+)
         ],
       ),
     );
   }
 
-  void _showErrorDialog(String error) {
+  void _showErrorDialog(BuildContext context, String error) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -488,24 +437,6 @@ class _MyTripPageState extends State<MyTripPage> {
           ),
         ],
       ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}';
-  }
-}
-
-class Interest {
-  final String name;
-  final bool isSelected;
-
-  Interest({required this.name, this.isSelected = false});
-
-  Interest copyWith({String? name, bool? isSelected}) {
-    return Interest(
-      name: name ?? this.name,
-      isSelected: isSelected ?? this.isSelected,
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:rafiq/theme/app_colors.dart';
-import 'package:rafiq/pages/destination_date_page.dart';
-import 'package:rafiq/pages/trip_results_page.dart';
-import 'package:rafiq/services/trip_service.dart';
+import '../theme/app_colors.dart';
+import '../pages/destination_date_page.dart';
+import '../pages/trip_results_page.dart';
+import '../services/trip_service.dart';
 import 'package:intl/intl.dart';
 
 class MyTripsPage extends StatefulWidget {

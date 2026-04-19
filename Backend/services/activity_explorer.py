@@ -6,7 +6,6 @@ from Backend.adapters.db_adapter import fetch_db_activities
 
 RADIUS_KM = 15.0 # km radius for nearby activities
 
-
 # Helpers
 def bucket_from_minutes(minutes: Optional[int]) -> Optional[str]:
     if minutes is None:

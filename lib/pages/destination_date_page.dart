@@ -1,39 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:rafiq/theme/app_colors.dart';
-import 'package:rafiq/pages/my_trip_page.dart';
-import 'package:rafiq/services/trip_service.dart';
-import 'package:rafiq/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../theme/app_colors.dart';
+import '../controllers/destination_date_controller.dart';
+import '../pages/budget_interest_page.dart';
 import 'package:intl/intl.dart';
 
-class DestinationDatePage extends StatefulWidget {
+class DestinationDatePage extends StatelessWidget {
   const DestinationDatePage({Key? key}) : super(key: key);
 
   @override
-  _DestinationDatePageState createState() => _DestinationDatePageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => DestinationDateController(),
+      child: const _DestinationDateView(),
+    );
+  }
 }
 
-class _DestinationDatePageState extends State<DestinationDatePage> {
-  DateTime? _selectedFromDate;
-  DateTime? _selectedToDate;
-  DateTime _currentMonth = DateTime.now();
-  String _destination = 'Jeddah';
-  String? _preferenceId;
-
-  final List<String> _destinations = ['Jeddah', 'Riyadh', 'AlUla'];
-
-  @override
-  void initState() {
-    super.initState();
-    _checkAuth();
-  }
-
-  void _checkAuth() {
-    if (!AuthService.isLoggedIn) {
-      Future.delayed(Duration.zero, () {
-        Navigator.pushReplacementNamed(context, '/login');
-      });
-    }
-  }
+class _DestinationDateView extends StatelessWidget {
+  const _DestinationDateView({Key? key}) : super(key: key);
 
   String _formatDate(DateTime date) {
     return DateFormat('MMM d, yyyy').format(date);
@@ -43,7 +28,304 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
     return DateFormat('MMMM yyyy').format(date);
   }
 
-  Widget _buildStepIndicator() {
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<DestinationDateController>();
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: AppColors.secondary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.close, color: AppColors.textPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStepIndicator(context),
+                const SizedBox(height: 8),
+                _buildHeader(),
+                const SizedBox(height: 24),
+
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(color: AppColors.greyLight),
+                  ),
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Destination',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.greyLight),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: controller.destination,
+                            isExpanded: true,
+                            icon: Icon(Icons.arrow_drop_down,
+                                color: AppColors.secondary),
+                            onChanged: (value) {
+                              if (value != null) {
+                                controller.setDestination(value);
+                              }
+                            },
+                            items: ['Jeddah', 'Riyadh', 'AlUla']
+                                .map(
+                                  (value) => DropdownMenuItem(
+                                    value: value,
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.location_on,
+                                            color: AppColors.accent, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          value,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      const Text(
+                        'From - To',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => controller.pickDate(
+                                context: context,
+                                from: true,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.white,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(color: AppColors.accent),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.calendar_today,
+                                        color: AppColors.textSecondary,
+                                        size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        controller.fromDate != null
+                                            ? _formatDate(controller.fromDate!)
+                                            : 'From',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: controller.fromDate != null
+                                              ? AppColors.textPrimary
+                                              : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => controller.pickDate(
+                                context: context,
+                                from: false,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.white,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(color: AppColors.accent),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.calendar_today,
+                                        color: AppColors.textSecondary,
+                                        size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        controller.toDate != null
+                                            ? _formatDate(controller.toDate!)
+                                            : 'To',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: controller.toDate != null
+                                              ? AppColors.textPrimary
+                                              : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatMonthYear(controller.currentMonth),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: () =>
+                                    controller.changeMonth(-1),
+                                icon: Icon(Icons.chevron_left,
+                                    size: 32, color: AppColors.primary),
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    controller.changeMonth(1),
+                                icon: Icon(Icons.chevron_right,
+                                    size: 32, color: AppColors.primary),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+                      _buildCalendar(context, controller),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                Center(
+                  child: SizedBox(
+                    width: 180,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: controller.fromDate != null &&
+                              controller.toDate != null
+                          ? () async {
+                              final id =
+                                  await controller.saveTripRequest();
+                              if (id != null && context.mounted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BudgetInterestPage(
+                                      preferenceId: id,
+                                      destination: controller.destination,
+                                      fromDate: controller.fromDate!,
+                                      toDate: controller.toDate!,
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            controller.fromDate != null &&
+                                    controller.toDate != null
+                                ? AppColors.secondary
+                                : AppColors.greyLight,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        'Next',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: controller.fromDate != null &&
+                                  controller.toDate != null
+                              ? AppColors.white
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }}
+
+  Widget _buildStepIndicator(BuildContext context) {
     return Column(
       children: [
         Row(
@@ -100,287 +382,12 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.secondary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.close, color: AppColors.textPrimary),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildStepIndicator(),
-                const SizedBox(height: 8),
-                _buildHeader(),
-                const SizedBox(height: 24),
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                    border: Border.all(color: AppColors.greyLight),
-                  ),
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Destination',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.greyLight),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _destination,
-                                isExpanded: true,
-                                icon: Icon(Icons.arrow_drop_down, color: AppColors.secondary),
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    _destination = newValue!;
-                                  });
-                                },
-                                items: _destinations.map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.location_on, color: AppColors.accent, size: 18),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          value,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                     
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'From - To',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => _selectDate(isFromDate: true),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.white,
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(color: AppColors.accent),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.calendar_today, color: AppColors.textSecondary, size: 20),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedFromDate != null ? _formatDate(_selectedFromDate!) : 'From',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                              color: _selectedFromDate != null ? AppColors.textPrimary : AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => _selectDate(isFromDate: false),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.white,
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(color: AppColors.accent),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.calendar_today, color: AppColors.textSecondary, size: 20),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedToDate != null ? _formatDate(_selectedToDate!) : 'To',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                              color: _selectedToDate != null ? AppColors.textPrimary : AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _formatMonthYear(_currentMonth),
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.secondary,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: () => _changeMonth(-1),
-                                icon: Icon(Icons.chevron_left, size: 32, color: AppColors.primary),
-                              ),
-                              IconButton(
-                                onPressed: () => _changeMonth(1),
-                                icon: Icon(Icons.chevron_right, size: 32, color: AppColors.primary),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      _buildCalendar(),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                
-                Center(
-                  child: SizedBox(
-                    width: 180,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _selectedFromDate != null && _selectedToDate != null
-                          ? () async {
-                              _showLoadingDialog();
-                              try {
-                                final result = await TripService.saveTripRequest(
-                                  destination: _destination,
-                                  fromDate: _selectedFromDate!,
-                                  toDate: _selectedToDate!,
-                                );
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MyTripPage(
-                                        preferenceId: result['preference_id'],
-                                        destination: _destination,
-                                        fromDate: _selectedFromDate!,
-                                        toDate: _selectedToDate!,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  _showErrorDialog(e.toString());
-                                }
-                              }
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _selectedFromDate != null && _selectedToDate != null
-                            ? AppColors.secondary
-                            : AppColors.greyLight,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        'Next',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: _selectedFromDate != null && _selectedToDate != null
-                              ? AppColors.white
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCalendar() {
-    final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
-    final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
+  Widget _buildCalendar(
+      BuildContext context, DestinationDateController controller) {
+    final firstDay = DateTime(
+        controller.currentMonth.year, controller.currentMonth.month, 1);
+    final lastDay = DateTime(
+        controller.currentMonth.year, controller.currentMonth.month + 1, 0);
     final daysInMonth = lastDay.day;
     final startingWeekday = firstDay.weekday;
 
@@ -405,17 +412,19 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
             ),
             child: Row(
               children: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-                  .map((day) => Expanded(
-                        child: Text(
-                          day,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.white,
-                            fontSize: 12,
-                          ),
+                  .map(
+                    (day) => Expanded(
+                      child: Text(
+                        day,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.white,
+                          fontSize: 12,
                         ),
-                      ))
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -423,51 +432,70 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
               childAspectRatio: 1.2,
             ),
             itemCount: 42,
             itemBuilder: (context, index) {
-              final dayOffset = index - (startingWeekday == 7 ? 0 : startingWeekday) + 1;
-              final isCurrentMonth = dayOffset > 0 && dayOffset <= daysInMonth;
+              final dayOffset = index -
+                      (startingWeekday == 7 ? 0 : startingWeekday) +
+                  1;
+              final isCurrentMonth =
+                  dayOffset > 0 && dayOffset <= daysInMonth;
               final day = isCurrentMonth ? dayOffset : null;
 
               bool isSelectable = false;
               if (isCurrentMonth) {
-                if (_currentMonth.year > today.year ||
-                    (_currentMonth.year == today.year && _currentMonth.month > today.month) ||
-                    (_currentMonth.year == today.year &&
-                        _currentMonth.month == today.month &&
+                if (controller.currentMonth.year > today.year ||
+                    (controller.currentMonth.year == today.year &&
+                        controller.currentMonth.month > today.month) ||
+                    (controller.currentMonth.year == today.year &&
+                        controller.currentMonth.month == today.month &&
                         day! >= today.day)) {
                   isSelectable = true;
                 }
               }
 
-              final isSelected = isCurrentMonth &&
-                  _selectedFromDate != null &&
-                  day == _selectedFromDate!.day &&
-                  _currentMonth.month == _selectedFromDate!.month &&
-                  _currentMonth.year == _selectedFromDate!.year;
+              final isFrom = isCurrentMonth &&
+                  controller.fromDate != null &&
+                  day == controller.fromDate!.day &&
+                  controller.currentMonth.month ==
+                      controller.fromDate!.month &&
+                  controller.currentMonth.year ==
+                      controller.fromDate!.year;
+
+              final isTo = isCurrentMonth &&
+                  controller.toDate != null &&
+                  day == controller.toDate!.day &&
+                  controller.currentMonth.month ==
+                      controller.toDate!.month &&
+                  controller.currentMonth.year ==
+                      controller.toDate!.year;
 
               final isInRange = isCurrentMonth &&
-                  _selectedFromDate != null &&
-                  _selectedToDate != null &&
-                  day! >= _selectedFromDate!.day &&
-                  day <= _selectedToDate!.day &&
-                  _currentMonth.month == _selectedFromDate!.month &&
-                  _currentMonth.year == _selectedFromDate!.year;
+                  controller.fromDate != null &&
+                  controller.toDate != null &&
+                  day! >= controller.fromDate!.day &&
+                  day <= controller.toDate!.day &&
+                  controller.currentMonth.month ==
+                      controller.fromDate!.month &&
+                  controller.currentMonth.year ==
+                      controller.fromDate!.year;
 
               return GestureDetector(
-                onTap: isSelectable ? () => _onDaySelected(day!) : null,
+                onTap: isSelectable
+                    ? () => controller.selectDay(day!)
+                    : null,
                 child: Container(
                   margin: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: isSelected
+                    color: isFrom || isTo
                         ? AppColors.accent
                         : isInRange
                             ? AppColors.accent.withOpacity(0.1)
-                            : AppColors.transparent,
+                            : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
@@ -475,15 +503,16 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
                       day != null ? '$day' : '',
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isFrom || isTo ? FontWeight.bold : FontWeight.normal,
                         color: isSelectable
-                            ? (isSelected
+                            ? (isFrom || isTo
                                 ? AppColors.white
                                 : isInRange
                                     ? AppColors.accent
                                     : AppColors.textPrimary)
                             : AppColors.greyDark,
-                      ),
+                         ),
                     ),
                   ),
                 ),
@@ -494,103 +523,3 @@ class _DestinationDatePageState extends State<DestinationDatePage> {
       ),
     );
   }
-
-  void _changeMonth(int offset) {
-    setState(() {
-      _currentMonth = DateTime(
-        _currentMonth.year,
-        _currentMonth.month + offset,
-        1,
-      );
-    });
-  }
-
-  void _onDaySelected(int day) {
-    final selectedDate = DateTime(_currentMonth.year, _currentMonth.month, day);
-    final today = DateTime.now();
-
-    if (selectedDate.isBefore(DateTime(today.year, today.month, today.day))) return;
-
-    setState(() {
-      if (_selectedFromDate == null) {
-        _selectedFromDate = selectedDate;
-        _selectedToDate = null;
-      } else if (_selectedToDate == null) {
-        if (selectedDate.isBefore(_selectedFromDate!)) {
-          _selectedToDate = _selectedFromDate;
-          _selectedFromDate = selectedDate;
-        } else {
-          _selectedToDate = selectedDate;
-        }
-      } else {
-        _selectedFromDate = selectedDate;
-        _selectedToDate = null;
-      }
-    });
-  }
-
-  Future<void> _selectDate({required bool isFromDate}) async {
-    final today = DateTime.now();
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: isFromDate
-          ? (_selectedFromDate ?? today)
-          : (_selectedToDate ?? (_selectedFromDate ?? today)),
-      firstDate: today,
-      lastDate: DateTime(2026),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: AppColors.primary,
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.textPrimary,
-            ),
-            buttonTheme: const ButtonThemeData(
-              textTheme: ButtonTextTheme.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (selected != null) {
-      setState(() {
-        if (isFromDate) {
-          _selectedFromDate = selected;
-          if (_selectedToDate != null && _selectedToDate!.isBefore(selected)) {
-            _selectedToDate = null;
-          }
-        } else {
-          _selectedToDate = selected;
-        }
-      });
-    }
-  }
-
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
-  void _showErrorDialog(String error) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(error),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-}

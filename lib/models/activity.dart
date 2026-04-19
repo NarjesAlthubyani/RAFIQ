@@ -1,93 +1,65 @@
 class Activity {
-  final int activityId;
   final String name;
-  String? locationLink;
   final String category;
-  final int duration;
-  final double estimatedCost;
-  String? description;
-  double? lat;
-  double? lng;
-  String? imageUrl;
-  String? startTime;
-  String? endTime;
+  final String description;
+  final double cost;
+  final int durationMinutes;
+  final String? imageUrl;
+  final String? locationLink;
+  final String? ticketLink;
+  final bool ticketBooking;
+  final double lat;
+  final double lng;
+  final String time;
+  final String type;
 
   Activity({
-    required this.activityId,
     required this.name,
-    this.locationLink,
     required this.category,
-    required this.duration,
-    required this.estimatedCost,
-    this.description,
-    this.lat,
-    this.lng,
+    required this.description,
+    required this.cost,
+    required this.durationMinutes,
     this.imageUrl,
-    this.startTime,
-    this.endTime,
+    this.locationLink,
+    this.ticketLink,
+    required this.ticketBooking,
+    required this.lat,
+    required this.lng,
+    required this.time,
+    required this.type,
   });
 
-  int getDuration() => duration;
-  
-  String getActivityDetails() => description ?? name;
-
-  Map<String, dynamic> toJson() => {
-    'activity_id': activityId,
-    'name': name,
-    'location_link': locationLink,
-    'category': category,
-    'duration': duration,
-    'estimated_cost': estimatedCost,
-    'description': description,
-    'lat': lat,
-    'lng': lng,
-    'image_url': imageUrl,
-    'start_time': startTime,
-    'end_time': endTime,
-  };
-
-  factory Activity.fromJson(Map<String, dynamic> json) => Activity(
-    activityId: json['activity_id'] ?? json['id'] ?? DateTime.now().millisecondsSinceEpoch,
-    name: json['name'] ?? json['title'] ?? 'Unknown',
-    locationLink: json['location_link'],
-    category: json['category'] ?? 'General',
-    duration: (json['duration'] ?? 60).toInt(),
-    estimatedCost: (json['cost'] ?? json['estimated_cost'] ?? 0.0).toDouble(),
-    description: json['description'],
-    lat: json['lat']?.toDouble(),
-    lng: json['lng']?.toDouble(),
-    imageUrl: json['image_url'],
-    startTime: json['start_time'],
-    endTime: json['end_time'],
-  );
-
-  Activity copyWith({
-    int? activityId,
-    String? name,
-    String? locationLink,
-    String? category,
-    int? duration,
-    double? estimatedCost,
-    String? description,
-    double? lat,
-    double? lng,
-    String? imageUrl,
-    String? startTime,
-    String? endTime,
-  }) {
+  factory Activity.fromJson(Map<String, dynamic> json) {
     return Activity(
-      activityId: activityId ?? this.activityId,
-      name: name ?? this.name,
-      locationLink: locationLink ?? this.locationLink,
-      category: category ?? this.category,
-      duration: duration ?? this.duration,
-      estimatedCost: estimatedCost ?? this.estimatedCost,
-      description: description ?? this.description,
-      lat: lat ?? this.lat,
-      lng: lng ?? this.lng,
-      imageUrl: imageUrl ?? this.imageUrl,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
+      name: json['name']?.toString() ?? '',
+      category: json['category']?.toString() ?? 'General',
+      description: json['description']?.toString() ?? '',
+      cost: (json['cost'] ?? 0).toDouble(),
+      durationMinutes: (json['duration'] ?? json['duration_minutes'] ?? 60).toInt(),
+      imageUrl: json['image_url']?.toString(),
+      locationLink: json['location_link']?.toString(),
+      ticketLink: json['ticket_link']?.toString(),
+      ticketBooking: json['ticket_booking'] ?? false,
+      lat: (json['lat'] ?? 0).toDouble(),
+      lng: (json['lng'] ?? 0).toDouble(),
+      time: json['time']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'category': category,
+    'description': description,
+    'cost': cost,
+    'duration_minutes': durationMinutes,
+    'image_url': imageUrl,
+    'location_link': locationLink,
+    'ticket_link': ticketLink,
+    'ticket_booking': ticketBooking,
+    'lat': lat,
+    'lng': lng,
+    'time': time,
+    'type': type,
+  };
 }
