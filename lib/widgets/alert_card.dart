@@ -3,11 +3,13 @@ import '../models/alert_model.dart';
 import '../theme/app_colors.dart';
 import 'package:intl/intl.dart';
 
+// AlertCard is a UI component that displays a single alert item
+// including its icon, title, description, and creation date.
 class AlertCard extends StatelessWidget {
   final AlertModel alert;
 
   const AlertCard({super.key, required this.alert});
-
+ // Returns an appropriate icon based on the alert type
   IconData getIcon(String type) {
       switch (type) {
         case 'weather':
@@ -25,6 +27,7 @@ class AlertCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 15),
+      // Card styling for alert display
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),

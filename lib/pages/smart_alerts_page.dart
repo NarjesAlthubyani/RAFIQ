@@ -6,6 +6,9 @@ import '../adapters/weather_adapter.dart';
 import '../services/supabase_config.dart';
 import '../services/auth_service.dart';
 
+// SmartAlertsPage is responsible for displaying real-time smart alerts
+// to the user based on weather conditions and stored alert data. 
+
 class SmartAlertsPage extends StatefulWidget {
   const SmartAlertsPage({super.key});
 
@@ -13,6 +16,7 @@ class SmartAlertsPage extends StatefulWidget {
   State<SmartAlertsPage> createState() => _SmartAlertsPageState();
 }
 class _SmartAlertsPageState extends State<SmartAlertsPage> {
+  // List of alerts retrieved from the database
   List<AlertModel> alerts = [];
 
   @override
@@ -22,6 +26,7 @@ class _SmartAlertsPageState extends State<SmartAlertsPage> {
     checkWeather();
   }
 
+    // Fetches all alerts for the current user from Supabase
     Future<void> loadAlerts() async {
     final user = AuthService.currentUser;
 
@@ -32,7 +37,7 @@ class _SmartAlertsPageState extends State<SmartAlertsPage> {
         .select()
         .eq('user_id', user.id)
         .order('created_at', ascending: false);
-
+    // Convert raw JSON data into AlertModel objects
     setState(() {
       alerts = (response as List)
           .map((json) => AlertModel.fromJson(json))
@@ -40,20 +45,38 @@ class _SmartAlertsPageState extends State<SmartAlertsPage> {
     });
   }
 
-    Future<void> checkWeather() async {
-    final weatherService = WeatherService();
+  // Retrieves the user's selected city from the database.
+  Future<String> getUserCity() async {
+  final user = AuthService.currentUser;
 
-    String currentCity = "Jeddah"; // our scope
+  if (user == null) return "Jeddah";
 
-    final condition = await weatherService.getWeatherCondition(currentCity);
+  final response = await supabase
+      .from('users')
+      .select('location')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    final alert = WeatherAdapter.convertToAlert(condition, currentCity);
+  return response?['location'] ?? "Jeddah";
+}
 
-    if (alert != null) {
-      await supabase.from('alerts').insert(alert.toJson());
-      await loadAlerts(); 
-    }
+// Checks current weather conditions for the user's city
+// and generates a weather alert if conditions are severe.
+Future<void> checkWeather() async {
+  final weatherService = WeatherService();
+
+  final currentCity = await getUserCity(); // update link city according user's city from DB
+  // Fetch weather condition from external service "OpenWeather APIs"
+  final condition = await weatherService.getWeatherCondition(currentCity);
+  // Convert weather condition into an alert object if needed
+  final alert = WeatherAdapter.convertToAlert(condition, currentCity);
+
+  // Store alert in database and refresh UI if alert is generated
+  if (alert != null) {
+    await supabase.from('alerts').insert(alert.toJson());
+    await loadAlerts();
   }
+}
 
   
 
@@ -64,6 +87,7 @@ class _SmartAlertsPageState extends State<SmartAlertsPage> {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
+      // Page header
       appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -75,7 +99,8 @@ class _SmartAlertsPageState extends State<SmartAlertsPage> {
               },
             ),
           ),
-
+      
+      // Main content area displaying alerts list
      body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: ListView(
@@ -100,6 +125,7 @@ class _SmartAlertsPageState extends State<SmartAlertsPage> {
                   ),
                 )
               else
+              // Builds and displays a list of alert cards from the alerts data
                 ...alerts.map((alert) => AlertCard(alert: alert)).toList(),
             ],
           ),

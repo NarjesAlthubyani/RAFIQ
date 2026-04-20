@@ -54,7 +54,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (profile != null) {
         _nameController.text = profile['name'] ?? '';
-      }
+        _location = profile['location'] ?? 'Jeddah'; // M: read city from database 
+}
 
       setState(() => _isLoading = false);
     } catch (e) {
@@ -63,17 +64,28 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _toggleEditSave() {
-    if (_isEditing) {
-      setState(() => _isEditing = false);
+  void _toggleEditSave() async {
+  if (_isEditing) {
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
-      );
-    } else {
-      setState(() => _isEditing = true);
+    final user = supabase.auth.currentUser;
+
+    if (user != null) {
+      await supabase.from(tableName).update({
+        'name': _nameController.text,
+        'location': _location, // M: new update link city for weather alert
+      }).eq('user_id', user.id);
     }
+
+    setState(() => _isEditing = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile updated successfully!')),
+    );
+
+  } else {
+    setState(() => _isEditing = true);
   }
+}
 
   void _showAvatarColorPicker() {
     showModalBottomSheet(
@@ -299,11 +311,19 @@ class _ProfilePageState extends State<ProfilePage> {
                                 child: Text('AlUla'),
                               ),
                             ],
-                            onChanged: (v) {
+                            onChanged: (v) async {
                               if (v != null) {
                                 setState(() => _location = v);
+
+                                final user = supabase.auth.currentUser;
+
+                                if (user != null) {
+                                  await supabase.from(tableName).update({
+                                    'location': v,
+                                  }).eq('user_id', user.id);
+                                }
                               }
-                            },
+                            },// M: Auto save on selection
                           ),
                         ),
 

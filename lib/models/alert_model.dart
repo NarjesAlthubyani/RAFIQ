@@ -1,3 +1,8 @@
+
+// AlertModel represents the structure of an alert entity in the system.
+// It is used to define how alert data is stored, transferred, and displayed
+// within the application and Supabase database.
+
 class AlertModel {
   final String id;
   final String userId;
@@ -7,6 +12,7 @@ class AlertModel {
   final bool isRead;
   final DateTime createdAt;
 
+// Constructor requiring all fields to ensure data consistency
   AlertModel({
     required this.id,
     required this.userId,
@@ -17,6 +23,7 @@ class AlertModel {
     required this.createdAt,
   });
 
+ // Factory method to convert JSON data from Supabase into AlertModel object
   factory AlertModel.fromJson(Map<String, dynamic> json) {
     return AlertModel(
       id: json['id'],
@@ -29,6 +36,7 @@ class AlertModel {
     );
   }
 
+// Converts AlertModel object into JSON format for database storage
   Map<String, dynamic> toJson() {
     return {
       'user_id': userId,
