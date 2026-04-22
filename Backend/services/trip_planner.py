@@ -5,7 +5,7 @@ import random
 from supabase import create_client
 from dotenv import load_dotenv
 from typing import List, Dict, Any
-from services.ai_adapter import AIAdapter
+from Backend.services.ai_adapter import AIAdapter
 from datetime import datetime, timedelta
 
 load_dotenv()

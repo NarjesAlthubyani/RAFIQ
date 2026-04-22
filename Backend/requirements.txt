@@ -1,9 +1,11 @@
 fastapi
 uvicorn
-google-generativeai
+google-genai
 supabase
 python-dotenv
 httpx
 pydantic
 pillow
 requests
+torch
+transformers

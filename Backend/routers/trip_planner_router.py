@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
-from services.trip_planner import generate_trip_plan 
+from Backend.services.trip_planner import generate_trip_plan 
 
 router = APIRouter(prefix="/api/trip-planner", tags=["Trip Planner"])
 
