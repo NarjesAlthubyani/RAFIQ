@@ -22,7 +22,7 @@ class AIPlannerService {
               'budget': budget,
             }),
           )
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 90));
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);

@@ -1,12 +1,9 @@
 import os
-import json
 import math
-import random
 from supabase import create_client
 from dotenv import load_dotenv
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from Backend.services.ai_adapter import AIAdapter
-from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -17,318 +14,234 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 class TripPlanner:
-    
+
     def __init__(self):
         self.ai_adapter = AIAdapter()
-        self.day_start_hour = 9      
-        self.day_end_hour = 21      
-        self.lunch_time = 13        
-        self.dinner_time = 19       
-    
+        self.day_start_hour = 9
+        self.day_end_hour = 21
+
+    # ---------------- DB ----------------
     def get_places_from_db(self, city: str) -> List[Dict]:
         response = supabase.table("saudi_places").select("*").eq("city", city).execute()
-        
+
         for place in response.data:
-            if place.get('duration_minutes') is None:
-                place['duration_minutes'] = 120  
-            if place.get('duration_minutes') == 0:
-                place['duration_minutes'] = 90
-        
+            tags = place.get("tags", []) or []
+            category = str(place.get("category", "")).lower()
+
+            place["all_tags"] = list(set(
+                [t.lower() for t in tags] + ([category] if category else [])
+            ))
+
         return response.data
-    
+
+    # ---------------- CORE ----------------
     def get_place_duration(self, place: Dict) -> int:
-        duration = place.get('duration_minutes', 120)
-        if duration is None or duration <= 0:
-            return 120
-        return int(duration)
-    
-    def haversine_distance(self, lat1, lon1, lat2, lon2):
+        return max(30, int(place.get("duration_minutes", 120)))
+
+    def place_distance(self, p1: Dict, p2: Dict) -> float:
+        if not p1 or not p2:
+            return 9999
+
+        lat1, lng1 = p1.get("lat", 0), p1.get("lng", 0)
+        lat2, lng2 = p2.get("lat", 0), p2.get("lng", 0)
+
+        if not lat1 or not lng1 or not lat2 or not lng2:
+            return 9999
+
         R = 6371
-        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lng1, lat2, lng2])
         dlat = lat2 - lat1
         dlon = lon2 - lon1
-        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
         return R * 2 * math.asin(math.sqrt(a))
-    
-    def calculate_travel_time(self, lat1, lon1, lat2, lon2) -> int:
-        if lat1 == 0 or lon1 == 0 or lat2 == 0 or lon2 == 0:
-            return 30  
-        
-        distance = self.haversine_distance(lat1, lon1, lat2, lon2)
-        
-        if distance <= 1:
-            return 5
-        elif distance <= 3:
-            return 10
-        elif distance <= 5:
-            return 15
-        elif distance <= 10:
-            return 20
-        elif distance <= 15:
-            return 25
-        elif distance <= 20:
-            return 35
-        else:
-            return 45
-    
+
+    def calculate_travel_time(self, p1: Dict, p2: Dict) -> int:
+        distance = self.place_distance(p1, p2)
+
+        if distance <= 1: return 5
+        if distance <= 3: return 10
+        if distance <= 5: return 15
+        if distance <= 10: return 20
+        return 30
+
+    def estimate_cost(self, place: Dict) -> int:
+        return place.get("price_level", 2) * 60
+
+    # ---------------- INTEREST SCORE ----------------
     def score_place(self, place: Dict, interests: List[str]) -> float:
-        tags = place.get("logic_tags", [])
-        category = place.get("category", "").lower()
-        name = place.get("name", "").lower()
-        
+        tags = set(place.get("all_tags", []))
+        interests = set([i.lower() for i in interests])
+
         score = 0
-        for interest in interests:
-            i = interest.lower()
-            if i in tags:
-                score += 3
-            elif i in category:
-                score += 2
-            elif i in name:
-                score += 1
-        
-        price = place.get("price_level", 2)
-        score -= price * 0.3
-        score += random.uniform(0, 0.3)
+        for i in interests:
+            for t in tags:
+                if i == t:
+                    score += 5
+                elif i in t or t in i:
+                    score += 2
+
         return score
-    
-    def get_place_type(self, place: Dict) -> str:
-        tags = place.get("logic_tags", [])
-        if "shopping" in tags:
-            return "shopping"
-        if "culture" in tags:
-            return "culture"
-        if "coffee" in tags:
-            return "coffee"
-        if "activity" in tags:
-            return "activity"
+
+    # ---------------- FOOD LOGIC ----------------
+    def is_food(self, place: Dict) -> bool:
+        category = str(place.get("category", "")).lower()
+        return any(x in category for x in ["food", "restaurant", "cafe", "coffee"])
+
+    def get_food_type(self, place: Dict) -> str:
+        category = str(place.get("category", "")).lower()
+
+        if "cafe" in category or "coffee" in category:
+            return "cafe"
+        if "restaurant" in category or "food" in category:
+            return "restaurant"
+
         return "other"
-    
-    def is_heavy(self, place: Dict) -> bool:
-        tags = place.get("logic_tags", [])
-        return "activity" in tags and "outdoor" in tags
-    
+
+    def covers_meal(self, place: Dict) -> bool:
+        return place.get("covers_meal", False)
+
+    # ---------------- CLUSTER ----------------
     def cluster_by_location(self, places: List[Dict]) -> List[List[Dict]]:
         clusters = []
         used = [False] * len(places)
-        
+
         for i in range(len(places)):
             if used[i]:
                 continue
-            
+
             cluster = [places[i]]
             used[i] = True
-            
+
             for j in range(i + 1, len(places)):
                 if used[j]:
                     continue
-                
-                lat1 = places[i].get('lat', 0)
-                lng1 = places[i].get('lng', 0)
-                lat2 = places[j].get('lat', 0)
-                lng2 = places[j].get('lng', 0)
-                
-                if lat1 and lng1 and lat2 and lng2:
-                    dist = self.haversine_distance(lat1, lng1, lat2, lng2)
-                    if dist <= 3:
-                        cluster.append(places[j])
-                        used[j] = True
-            
+
+                if self.place_distance(places[i], places[j]) <= 3:
+                    cluster.append(places[j])
+                    used[j] = True
+
             clusters.append(cluster)
-        
+
         return clusters
-    
-    def pick_unique(self, place_list: List[Dict], used_ids: set) -> Dict:
-        for p in place_list:
-            if p['id'] not in used_ids:
-                used_ids.add(p['id'])
-                return p
-        return None
-    
-    def calculate_available_time(self, day: int, breakfast_exists: bool, lunch_exists: bool, dinner_exists: bool,
-                                  breakfast_duration: int = 0, lunch_duration: int = 0, dinner_duration: int = 0) -> int:
-        total_minutes = (self.day_end_hour - self.day_start_hour) * 60
-        
-        if breakfast_exists and breakfast_duration > 0:
-            total_minutes -= breakfast_duration
-        if lunch_exists and lunch_duration > 0:
-            total_minutes -= lunch_duration
-        if dinner_exists and dinner_duration > 0:
-            total_minutes -= dinner_duration
-        
-        return max(120, total_minutes)
-    
-    def calculate_max_activities(self, attractions: List[Dict], available_minutes: int) -> int:
-        if not attractions:
-            return 0
-        
-        sorted_attractions = sorted(attractions, key=lambda x: self.get_place_duration(x))
-        
-        total_time = 0
-        count = 0
-        travel_time = 30
-        
-        for attr in sorted_attractions:
-            duration = self.get_place_duration(attr)
-            if total_time + duration + travel_time <= available_minutes:
-                total_time += duration + travel_time
-                count += 1
-            else:
-                break
-        
-        return max(1, min(count, 3))
-    
-    def create_daily_schedule(self, day: int, attractions: List[Dict], breakfast: Dict, lunch: Dict, dinner: Dict) -> Dict:
+
+    # ---------------- DAILY ----------------
+    def create_daily_schedule(self, day, attractions, breakfast, lunch, dinner):
         activities = []
         current_time = self.day_start_hour
-        
+        last_place = None
+        last_was_food = False
+
         def add(place, type_name):
-            nonlocal current_time
-            hours = int(current_time)
-            minutes = int((current_time % 1) * 60)
-            
+            nonlocal current_time, last_place, last_was_food
+
+            travel = self.calculate_travel_time(last_place, place) if last_place else 0
+            current_time += travel / 60
+
             duration = self.get_place_duration(place)
-            
+
+            if current_time + duration / 60 > self.day_end_hour:
+                return False
+
+            # ❌ منع food ورا بعض
+            if self.is_food(place) and last_was_food:
+                return False
+
             activities.append({
-                "time": f"{hours:02d}:{minutes:02d}",
-                "name": place.get('name'),
+                "time": f"{int(current_time):02d}:{int((current_time % 1) * 60):02d}",
+                "name": place["name"],
                 "type": type_name,
                 "duration": duration,
-                "cost": place.get('price_level', 2) * 50,
-                "category": place.get('category'),
-                "image_url": place.get('image_url', ''),
-                "location_link": place.get('location_link', ''),
-                "ticket_link": place.get('ticket_link', ''),
-                "ticket_booking": place.get('ticket_booking', False),
-                "covers_meal": place.get('covers_meal', False),
-                "logic_tags": place.get('logic_tags', []),
-                "lat": place.get('lat', 0),
-                "lng": place.get('lng', 0),
-                "duration_minutes": duration,
-                "price_level": place.get('price_level', 2),
-                "description": place.get('description', ''),
+                "cost": self.estimate_cost(place),
+                "category": place.get("category"),
+                "image_url": place.get("image_url", ""),
+                "location_link": place.get("location_link", ""),
+                "ticket_link": place.get("ticket_link", ""),
+                "ticket_booking": place.get("ticket_booking", False),
             })
+
             current_time += duration / 60
-            if type_name != "dinner":
-                current_time += 0.25  
-        
+            last_place = place
+            last_was_food = self.is_food(place)
+
+            return True
+
+        # breakfast (☕)
         if breakfast:
             add(breakfast, "breakfast")
-            current_time += 0.25  
-        else:
-            current_time += 0.5
-        
-       
-        time_until_lunch = self.lunch_time - current_time
-        morning_activities = []
-        travel_time = 0.25  
 
+        # attractions
         for attr in attractions:
-            duration_hours = self.get_place_duration(attr) / 60
-            if time_until_lunch >= duration_hours + travel_time:
-                morning_activities.append(attr)
-                time_until_lunch -= (duration_hours + travel_time)
-            else:
-                break
-        
-        for attr in morning_activities:
+            if self.covers_meal(attr):
+                add(attr, "attraction")
+                last_was_food = True
+                continue
+
             add(attr, "attraction")
-        
-        if current_time < self.lunch_time:
-            current_time = self.lunch_time
-        if lunch:
+
+        # lunch (🍽️)
+        if lunch and not last_was_food:
             add(lunch, "lunch")
-            current_time += 0.25   
-        
-        time_until_dinner = self.dinner_time - current_time
-        afternoon_activities = []
-        
-        remaining_attractions = [a for a in attractions if a not in morning_activities]
-        for attr in remaining_attractions:
-            duration_hours = self.get_place_duration(attr) / 60
-            if time_until_dinner >= duration_hours + travel_time:
-                afternoon_activities.append(attr)
-                time_until_dinner -= (duration_hours + travel_time)
-            else:
-                break
-        
-        for attr in afternoon_activities:
-            add(attr, "attraction")
-        
-        if current_time < self.dinner_time:
-            current_time = self.dinner_time
-        if dinner:
+
+        # dinner (🍽️)
+        if dinner and not last_was_food:
             add(dinner, "dinner")
-        
+
         return {
             "day": day,
             "activities": activities,
-            "daily_cost": sum(a.get('cost', 0) for a in activities),
-            "morning_activities_count": len(morning_activities),
-            "afternoon_activities_count": len(afternoon_activities)
+            "daily_cost": sum(a["cost"] for a in activities)
         }
-    
-    async def create_trip_plan(self, city: str, days: int, interests: List[str], budget: float) -> Dict[str, Any]:
-        
+
+    # ---------------- MAIN ----------------
+    async def create_trip_plan(self, city, days, interests, budget):
         all_places = self.get_places_from_db(city)
-        
-        if not all_places:
-            return {"days": [], "total_cost": 0, "summary": f"No places found in {city}"}
-        
-        attractions = [p for p in all_places if not p.get('covers_meal', False)]
-        meals = [p for p in all_places if p.get('covers_meal', False)]
-        
-        breakfast_places = [p for p in meals if "coffee" in p.get("logic_tags", []) or "mixed" in p.get("logic_tags", [])]
-        lunch_places = [p for p in meals if "food" in p.get("logic_tags", []) or "mixed" in p.get("logic_tags", [])]
-        
-        if not breakfast_places:
-            breakfast_places = meals
-        if not lunch_places:
-            lunch_places = meals
-        
-        selected_attractions = await self.ai_adapter.select_attractions(city, interests, budget, days, attractions)
-        
-        for p in selected_attractions:
+
+        attractions = [p for p in all_places if not self.is_food(p)]
+        meals = [p for p in all_places if self.is_food(p)]
+
+        selected = await self.ai_adapter.select_attractions(city, interests, budget, days, attractions)
+
+        for p in selected:
             p["score"] = self.score_place(p, interests)
-        selected_attractions.sort(key=lambda x: x["score"], reverse=True)
-        
-        clusters = self.cluster_by_location(selected_attractions)
-        
-        used_meal_ids = set()
+
+        selected.sort(key=lambda x: x["score"], reverse=True)
+
+        clusters = self.cluster_by_location(selected)
+
+        used = set()
         days_list = []
-        
-        attraction_index = 0
-        
-        for day in range(1, days + 1):
-            available_minutes = self.calculate_available_time(day, True, True, True)
-            
-            remaining_attractions = selected_attractions[attraction_index:]
-            max_activities = self.calculate_max_activities(remaining_attractions, available_minutes)
-            
-            cluster = clusters[day % len(clusters)]
-            day_attractions = cluster[:max_activities]
-            attraction_index += max_activities
-            
-            breakfast = self.pick_unique(breakfast_places, used_meal_ids)
-            lunch = self.pick_unique(lunch_places, used_meal_ids)
-            dinner = self.pick_unique(lunch_places, used_meal_ids)
-            
-            if lunch and "mixed" in lunch.get("logic_tags", []):
-                dinner = None
-            if breakfast and lunch and breakfast['id'] == lunch['id']:
-                lunch = self.pick_unique(lunch_places, used_meal_ids)
-            
-            day_plan = self.create_daily_schedule(day, day_attractions, breakfast, lunch, dinner)
+        total_cost = 0
+
+        # تقسيم meals
+        cafes = [p for p in meals if self.get_food_type(p) == "cafe"]
+        restaurants = [p for p in meals if self.get_food_type(p) == "restaurant"]
+
+        for d in range(1, days + 1):
+
+            cluster = clusters[d-1] if d-1 < len(clusters) else []
+
+            day_attractions = [p for p in cluster if p["id"] not in used][:4]
+
+            for p in day_attractions:
+                used.add(p["id"])
+
+            breakfast = cafes[d-1] if d-1 < len(cafes) else None
+            lunch = restaurants[d-1] if d-1 < len(restaurants) else None
+            dinner = restaurants[d] if d < len(restaurants) else None
+
+            day_plan = self.create_daily_schedule(d, day_attractions, breakfast, lunch, dinner)
+
             days_list.append(day_plan)
-        
-        total_cost = sum(d.get("daily_cost", 0) for d in days_list)
-        
+            total_cost += day_plan["daily_cost"]
+
         return {
             "days": days_list,
             "total_cost": total_cost,
-            "summary": f"Amazing {days}-day trip to {city} exploring your interests!"
+            "summary": f"Amazing {days}-day trip to {city}"
         }
 
 
-async def generate_trip_plan(city: str, days: int, interests: List[str], budget: float) -> Dict[str, Any]:
+async def generate_trip_plan(city, days, interests, budget):
     planner = TripPlanner()
     return await planner.create_trip_plan(city, days, interests, budget)
