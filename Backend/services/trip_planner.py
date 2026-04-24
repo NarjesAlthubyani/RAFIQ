@@ -12,7 +12,6 @@ SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
 class TripPlanner:
 
     def __init__(self):
@@ -20,7 +19,6 @@ class TripPlanner:
         self.day_start_hour = 9
         self.day_end_hour = 21
 
-    # ---------------- DB ----------------
     def get_places_from_db(self, city: str) -> List[Dict]:
         response = supabase.table("saudi_places").select("*").eq("city", city).execute()
 
@@ -34,7 +32,6 @@ class TripPlanner:
 
         return response.data
 
-    # ---------------- CORE ----------------
     def get_place_duration(self, place: Dict) -> int:
         return max(30, int(place.get("duration_minutes", 120)))
 
@@ -68,7 +65,6 @@ class TripPlanner:
     def estimate_cost(self, place: Dict) -> int:
         return place.get("price_level", 2) * 60
 
-    # ---------------- INTEREST SCORE ----------------
     def score_place(self, place: Dict, interests: List[str]) -> float:
         tags = set(place.get("all_tags", []))
         interests = set([i.lower() for i in interests])
@@ -83,7 +79,6 @@ class TripPlanner:
 
         return score
 
-    # ---------------- FOOD LOGIC ----------------
     def is_food(self, place: Dict) -> bool:
         category = str(place.get("category", "")).lower()
         return any(x in category for x in ["food", "restaurant", "cafe", "coffee"])
@@ -101,7 +96,6 @@ class TripPlanner:
     def covers_meal(self, place: Dict) -> bool:
         return place.get("covers_meal", False)
 
-    # ---------------- CLUSTER ----------------
     def cluster_by_location(self, places: List[Dict]) -> List[List[Dict]]:
         clusters = []
         used = [False] * len(places)
@@ -125,7 +119,6 @@ class TripPlanner:
 
         return clusters
 
-    # ---------------- DAILY ----------------
     def create_daily_schedule(self, day, attractions, breakfast, lunch, dinner):
         activities = []
         current_time = self.day_start_hour
@@ -143,7 +136,6 @@ class TripPlanner:
             if current_time + duration / 60 > self.day_end_hour:
                 return False
 
-            # ❌ منع food ورا بعض
             if self.is_food(place) and last_was_food:
                 return False
 
@@ -166,11 +158,9 @@ class TripPlanner:
 
             return True
 
-        # breakfast (☕)
         if breakfast:
             add(breakfast, "breakfast")
 
-        # attractions
         for attr in attractions:
             if self.covers_meal(attr):
                 add(attr, "attraction")
@@ -179,11 +169,9 @@ class TripPlanner:
 
             add(attr, "attraction")
 
-        # lunch (🍽️)
         if lunch and not last_was_food:
             add(lunch, "lunch")
 
-        # dinner (🍽️)
         if dinner and not last_was_food:
             add(dinner, "dinner")
 
@@ -193,7 +181,6 @@ class TripPlanner:
             "daily_cost": sum(a["cost"] for a in activities)
         }
 
-    # ---------------- MAIN ----------------
     async def create_trip_plan(self, city, days, interests, budget):
         all_places = self.get_places_from_db(city)
 
@@ -213,7 +200,6 @@ class TripPlanner:
         days_list = []
         total_cost = 0
 
-        # تقسيم meals
         cafes = [p for p in meals if self.get_food_type(p) == "cafe"]
         restaurants = [p for p in meals if self.get_food_type(p) == "restaurant"]
 
