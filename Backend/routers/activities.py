@@ -15,6 +15,8 @@ async def activities(
         description="Optional: filter activities by available time (minutes). If omitted, returns nearby activities only."
     ),
 ):
+    
+  # Receive user location and optional filters, then forward to service layer
     return await get_activities(
         lat=lat,
         lng=lng,
