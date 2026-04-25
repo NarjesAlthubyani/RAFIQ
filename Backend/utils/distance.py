@@ -1,5 +1,6 @@
 import math
 
+# Calculate distance between two locations using Haversine formula
 def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     R = 6371.0  # Earth radius 
 

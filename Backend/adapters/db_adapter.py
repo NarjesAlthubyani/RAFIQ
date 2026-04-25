@@ -17,13 +17,14 @@ def _assert_env() -> None:
 
 
 def _headers() -> Dict[str, str]:
+    # Prepare headers for Supabase request
     return {
         "apikey": SUPABASE_ANON_KEY,
         "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
         "Accept": "application/json",
     }
 
-
+# Normalize database record
 def normalize_record(row: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "id": f"db:{row['id']}",
@@ -56,6 +57,7 @@ async def fetch_db_activities(
         "order": "id.asc",
     }
 
+     # Send request to Supabase
     async with httpx.AsyncClient(timeout=20.0) as client:
         resp = await client.get(url, headers=_headers(), params=params)
 
@@ -63,4 +65,5 @@ async def fetch_db_activities(
         raise RuntimeError(f"Supabase REST error {resp.status_code}: {resp.text}")
 
     rows = resp.json()
+    # Convert raw database rows into normalized format
     return [normalize_record(r) for r in rows]

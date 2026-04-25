@@ -52,6 +52,7 @@ class _NearbyPageState extends State<NearbyPage> {
     _fetchActivities(); 
   }
 
+// Get user current location if permission is granted
   Future<Position?> _tryGetUserLocation() async {
     try {
       var permission = await Geolocator.checkPermission();
@@ -77,6 +78,7 @@ class _NearbyPageState extends State<NearbyPage> {
     }
   }
 
+  // Convert backend duration bucket to UI text
   String _bucketToUi(String bucket) {
     switch (bucket) {
       case '<1h':
@@ -92,7 +94,7 @@ class _NearbyPageState extends State<NearbyPage> {
     }
   }
 
-  //  للباك-اند available_minutes
+// Convert selected UI duration to backend minutes value
   int? _uiDurationToMinutes(String ui) {
   switch (ui.trim()) {
     case '<1 hour':
@@ -107,7 +109,7 @@ class _NearbyPageState extends State<NearbyPage> {
       return null;
   }
 }
-
+  // Fetch nearby activities from backend
   Future<void> _fetchActivities({int? availableMinutes}) async {
     setState(() {
       _isLoading = true;
@@ -115,27 +117,28 @@ class _NearbyPageState extends State<NearbyPage> {
     });
 
     try {
-      //  موقع اليوزر 
+      // Use current location if available, otherwise use default Jeddah coordinates
       final pos = await _tryGetUserLocation();
       final lat = pos?.latitude ?? 21.55;
       final lng = pos?.longitude ?? 39.17;
 
       print('User location: $lat, $lng');
       
-
+    // Add user location and limit to query parameters
       final params = <String, String>{
         'lat': lat.toString(),
         'lng': lng.toString(),
         'limit': '50',
       };
-
+      
+      // Add time filter only when selected
       if (availableMinutes != null) {
         params['available_minutes'] = availableMinutes.toString();
       }
 
       final uri = Uri.parse('$_baseUrl/activities').replace(queryParameters: params);
      
-
+     // Send request to activities endpoint
       final res = await http.get(uri);
       
       if (res.statusCode != 200) {
@@ -144,6 +147,7 @@ class _NearbyPageState extends State<NearbyPage> {
 
       final List data = jsonDecode(res.body);
 
+// Convert backend response into Activity objects
     final fetched = data.map<Activity>((item) {
   final title = (item['title'] ?? '').toString();
   final category = (item['category'] ?? '').toString();
@@ -187,7 +191,7 @@ class _NearbyPageState extends State<NearbyPage> {
     }
   }
 
-  // بحث محلي فقط (بدون فلترة )
+  // Filter activities locally by search text
   List<Activity> get _visibleActivities {
     final q = _searchQuery.toLowerCase().trim();
     if (q.isEmpty) return _activities;
@@ -202,6 +206,7 @@ class _NearbyPageState extends State<NearbyPage> {
     setState(() => _searchQuery = query);
   }
 
+// Open duration filter and reload activities based on selection
   void _showFilters() async {
     final result = await showModalBottomSheet<String>(
       context: context,
@@ -212,15 +217,14 @@ class _NearbyPageState extends State<NearbyPage> {
 
     if (result == null) return;
 
-    // Clear
+    // Clear selected duration and reload nearby activities
     if (result == 'CLEAR') {
       setState(() => _selectedDuration = '');
-      // إعادة تحميل بدون فلتر وقت
       await _fetchActivities();
       return;
     }
 
-    // Apply
+    // Apply selected duration filter
     setState(() => _selectedDuration = result);
 
     final minutes = _uiDurationToMinutes(result);
@@ -391,7 +395,7 @@ class _NearbyPageState extends State<NearbyPage> {
     );
   }
 }
-
+// Card used to display activity information
 class ActivityCard extends StatelessWidget {
   final String title;
   final String category;
@@ -522,6 +526,7 @@ class ActivityCard extends StatelessWidget {
                Column(
   mainAxisSize: MainAxisSize.min,
   children: [
+    // Open activity location in maps
     if (detailsUrl != null && detailsUrl!.isNotEmpty)
       ElevatedButton(
         onPressed: () async {
@@ -558,6 +563,8 @@ class ActivityCard extends StatelessWidget {
           ],
         ),
       ),
+
+      // Show ticket booking button if available
     if (ticketBooking && ticketLink != null && ticketLink!.isNotEmpty) ...[
       const SizedBox(height: 8),
       ElevatedButton(
@@ -606,7 +613,7 @@ class ActivityCard extends StatelessWidget {
     );
   }
 }
-
+// Bottom sheet used to select activity duration filter
 class FiltersBottomSheet extends StatefulWidget {
   final String initialSelection;
   const FiltersBottomSheet({super.key, required this.initialSelection});
