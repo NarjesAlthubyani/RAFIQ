@@ -7,12 +7,14 @@ from transformers import CLIPProcessor, CLIPModel
 
 class CLIPLandmarkRecognizer:
     def __init__(self, ref_root="ref_images"):
+        # Use GPU if available for faster processing
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Load pre-trained CLIP model
         self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(self.device)
         self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-        self.ref_root = ref_root
 
-        self.ref = []  # (landmark_name, embedding)
+        self.ref_root = ref_root
+        self.ref = []  #Store (landmark_name, embedding)
         self._load_reference_images()
 
     def _embed(self, img: Image.Image) -> torch.Tensor:
@@ -29,7 +31,7 @@ class CLIPLandmarkRecognizer:
 
             emb = self.model.visual_projection(pooled)
 
-        # Normalize
+       # Normalize embedding to make similarity comparison consistent
         emb = emb / emb.norm(dim=-1, keepdim=True)
         return emb.squeeze(0).cpu()
 
@@ -48,6 +50,8 @@ class CLIPLandmarkRecognizer:
 
                 path = os.path.join(folder, fname)
                 img = Image.open(path).convert("RGB")
+
+                # Convert each reference image into an embedding
                 emb = self._embed(img)
                 self.ref.append((landmark_name, emb))
 
@@ -55,14 +59,16 @@ class CLIPLandmarkRecognizer:
             raise RuntimeError("No reference images found inside ref_images/")
 
     def recognize(self, uploaded_image_bytes: bytes) -> tuple[str, float]:
+        # Convert uploaded image to embedding
         img = Image.open(io.BytesIO(uploaded_image_bytes)).convert("RGB")
         query = self._embed(img)
 
         best_name = "Unknown"
         best_score = -1.0
 
+        # Compare uploaded image with all stored reference embeddings
         for name, emb in self.ref:
-            score = float(torch.dot(query, emb))  # cosine similarity (normalized)
+            score = float(torch.dot(query, emb))  # similarity score
             if score > best_score:
                 best_score = score
                 best_name = name
