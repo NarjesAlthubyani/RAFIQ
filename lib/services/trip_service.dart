@@ -106,10 +106,11 @@ class TripService {
         .from('trip_plans')
         .update({'status': 'completed'})
         .eq('trip_id', tripId);
-        
+    print('✅ AI plan saved successfully');
   } catch (e) {
     rethrow;
   }
+  
 }
 
   static Future<List<Map<String, dynamic>>> getUserTrips() async {

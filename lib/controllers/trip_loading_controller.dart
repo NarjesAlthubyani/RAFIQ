@@ -9,7 +9,7 @@ class TripLoadingController extends ChangeNotifier {
   late DateTime toDate;
   late String budgetRange;
   late List<String> selectedInterests;
-
+  bool _isGenerating = false;
   bool isLoading = true;
   String? errorMessage;
 
@@ -81,6 +81,9 @@ class TripLoadingController extends ChangeNotifier {
   }
 
   Future<void> _generateTripWithAI() async {
+    if (_isGenerating) return;
+    _isGenerating = true;
+
     try {
       final days = toDate.difference(fromDate).inDays + 1;
       final double budget = TripService.parseBudget(budgetRange);
