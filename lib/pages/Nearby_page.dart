@@ -1,32 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../models/nearby_activity.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-// Data for Activity
-class Activity {
-  final String title;
-  final String category;
-  final String? duration;
-  final String? imageUrl;
-  final String? detailsUrl;
-  final double? distanceKm;
-  final bool ticketBooking;
-  final String? ticketLink;
-
-  Activity({
-    required this.title,
-    required this.category,
-    this.duration,
-    this.imageUrl,
-    this.detailsUrl,
-    this.distanceKm,
-    required this.ticketBooking,
-    this.ticketLink,
-  });
-}
 
 class NearbyPage extends StatefulWidget {
   const NearbyPage({super.key});
@@ -36,20 +14,18 @@ class NearbyPage extends StatefulWidget {
 }
 
 class _NearbyPageState extends State<NearbyPage> {
-  static const String _baseUrl = 'http://10.0.2.2:8000'; // Emulator
+  static const String _baseUrl = 'http://10.0.2.2:8000';
 
-  List<Activity> _activities = [];
+  List<NearbyActivity> _activities = [];
   bool _isLoading = false;
   String? _error;
-
   String _selectedDuration = '';
-
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _fetchActivities(); 
+    _fetchActivities();
   }
 
   Future<Position?> _tryGetUserLocation() async {
@@ -77,36 +53,20 @@ class _NearbyPageState extends State<NearbyPage> {
     }
   }
 
-  String _bucketToUi(String bucket) {
-    switch (bucket) {
-      case '<1h':
-        return '<1 hour';
-      case '1-2h':
-        return '1-2 hours';
-      case '2-3h':
-        return '2-3 hours';
-      case '3h+':
-        return 'More than 3 hours';
+  int? _uiDurationToMinutes(String ui) {
+    switch (ui.trim()) {
+      case '<1 hour':
+        return 60;
+      case '1-2 hours':
+        return 120;
+      case '2-3 hours':
+        return 180;
+      case 'More than 3 hours':
+        return 9999;
       default:
-        return '';
+        return null;
     }
   }
-
-  //  للباك-اند available_minutes
-  int? _uiDurationToMinutes(String ui) {
-  switch (ui.trim()) {
-    case '<1 hour':
-      return 60;
-    case '1-2 hours':
-      return 120;
-    case '2-3 hours':
-      return 180;
-    case 'More than 3 hours':
-      return 9999; 
-    default:
-      return null;
-  }
-}
 
   Future<void> _fetchActivities({int? availableMinutes}) async {
     setState(() {
@@ -115,13 +75,9 @@ class _NearbyPageState extends State<NearbyPage> {
     });
 
     try {
-      //  موقع اليوزر 
       final pos = await _tryGetUserLocation();
       final lat = pos?.latitude ?? 21.55;
       final lng = pos?.longitude ?? 39.17;
-
-      print('User location: $lat, $lng');
-      
 
       final params = <String, String>{
         'lat': lat.toString(),
@@ -134,45 +90,14 @@ class _NearbyPageState extends State<NearbyPage> {
       }
 
       final uri = Uri.parse('$_baseUrl/activities').replace(queryParameters: params);
-     
-
       final res = await http.get(uri);
-      
+
       if (res.statusCode != 200) {
         throw Exception('HTTP ${res.statusCode}: ${res.body}');
       }
 
       final List data = jsonDecode(res.body);
-
-    final fetched = data.map<Activity>((item) {
-  final title = (item['title'] ?? '').toString();
-  final category = (item['category'] ?? '').toString();
-  final imageUrl = item['imageUrl']?.toString();
-  final detailsUrl = item['detailsUrl']?.toString();
-  final ticketLink = item['ticketLink']?.toString();
-
-  final ticketBookingRaw = item['ticketBooking'];
-  final ticketBooking = ticketBookingRaw == true ||
-      ticketBookingRaw?.toString().toLowerCase() == 'true';
-
-  final distanceKm = item['distanceKm'] != null
-      ? double.tryParse(item['distanceKm'].toString())
-      : null;
-
-  final bucket = (item['durationBucket'] ?? '').toString();
-  final durationUi = _bucketToUi(bucket);
-
-  return Activity(
-    title: title,
-    category: category,
-    duration: durationUi,
-    imageUrl: imageUrl,
-    detailsUrl: detailsUrl,
-    distanceKm: distanceKm,
-    ticketBooking: ticketBooking,
-    ticketLink: ticketLink,
-  );
-}).toList();
+      final fetched = data.map((item) => NearbyActivity.fromJson(item)).toList();
 
       setState(() {
         _activities = fetched;
@@ -187,11 +112,9 @@ class _NearbyPageState extends State<NearbyPage> {
     }
   }
 
-  // بحث محلي فقط (بدون فلترة )
-  List<Activity> get _visibleActivities {
+  List<NearbyActivity> get _visibleActivities {
     final q = _searchQuery.toLowerCase().trim();
     if (q.isEmpty) return _activities;
-
     return _activities.where((a) {
       return a.title.toLowerCase().contains(q) ||
           a.category.toLowerCase().contains(q);
@@ -212,26 +135,19 @@ class _NearbyPageState extends State<NearbyPage> {
 
     if (result == null) return;
 
-    // Clear
     if (result == 'CLEAR') {
       setState(() => _selectedDuration = '');
-      // إعادة تحميل بدون فلتر وقت
       await _fetchActivities();
       return;
     }
 
-    // Apply
     setState(() => _selectedDuration = result);
-
     final minutes = _uiDurationToMinutes(result);
-
-    
     await _fetchActivities(availableMinutes: minutes);
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -241,7 +157,6 @@ class _NearbyPageState extends State<NearbyPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search Bar and Filter Button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -301,9 +216,7 @@ class _NearbyPageState extends State<NearbyPage> {
               ],
             ),
           ),
-
           const SizedBox(height: 24),
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -329,9 +242,7 @@ class _NearbyPageState extends State<NearbyPage> {
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
           if (_isLoading)
             const Expanded(
               child: Center(child: CircularProgressIndicator()),
@@ -372,17 +283,16 @@ class _NearbyPageState extends State<NearbyPage> {
                           const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         final activity = _visibleActivities[index];
-                        return ActivityCard(            
-                            title: activity.title,
-                            category: activity.category,
-                            duration: activity.duration,
-                            imageUrl: activity.imageUrl,
-                            detailsUrl: activity.detailsUrl,
-                            distanceKm: activity.distanceKm,
-                            ticketBooking: activity.ticketBooking,
-                            ticketLink: activity.ticketLink,
-                             );
-                        
+                        return ActivityCard(
+                          title: activity.title,
+                          category: activity.category,
+                          duration: activity.duration,
+                          imageUrl: activity.imageUrl,
+                          detailsUrl: activity.detailsUrl,
+                          distanceKm: activity.distanceKm,
+                          ticketBooking: activity.ticketBooking,
+                          ticketLink: activity.ticketLink,
+                        );
                       },
                     ),
             ),
@@ -403,16 +313,39 @@ class ActivityCard extends StatelessWidget {
   final String? ticketLink;
 
   const ActivityCard({
-     super.key,
-      required this.title,
-      required this.category,
-      this.duration,
-      this.imageUrl,
-      this.detailsUrl,
-      this.distanceKm,
-      required this.ticketBooking,
-      this.ticketLink,
+    super.key,
+    required this.title,
+    required this.category,
+    this.duration,
+    this.imageUrl,
+    this.detailsUrl,
+    this.distanceKm,
+    required this.ticketBooking,
+    this.ticketLink,
   });
+
+  IconData _getIconForCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'history':
+        return Icons.history;
+      case 'shopping':
+        return Icons.shopping_bag;
+      case 'food':
+      case 'restaurant':
+      case 'cafe':
+        return Icons.restaurant;
+      case 'nature':
+        return Icons.nature;
+      case 'adventure':
+        return Icons.hiking;
+      case 'entertainment':
+        return Icons.attractions;
+      case 'culture':
+        return Icons.museum;
+      default:
+        return Icons.place;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -435,23 +368,23 @@ class ActivityCard extends StatelessWidget {
             padding: const EdgeInsets.all(4.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-                    child: (imageUrl != null && imageUrl!.isNotEmpty)
-                        ? Image.network(
-                            imageUrl!,
-                            width: double.infinity,
-                            height: 160,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              height: 160,
-                              color: AppColors.greyLight,
-                              child: const Icon(Icons.image_not_supported),
-                            ),
-                          )
-                        : Container(
-                            height: 160,
-                            color: AppColors.greyLight,
-                            child: const Icon(Icons.image_not_supported),
-                          ),
+              child: (imageUrl != null && imageUrl!.isNotEmpty)
+                  ? Image.network(
+                      imageUrl!,
+                      width: double.infinity,
+                      height: 160,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 160,
+                        color: AppColors.greyLight,
+                        child: const Icon(Icons.image_not_supported),
+                      ),
+                    )
+                  : Container(
+                      height: 160,
+                      color: AppColors.greyLight,
+                      child: const Icon(Icons.image_not_supported),
+                    ),
             ),
           ),
           Padding(
@@ -476,7 +409,7 @@ class ActivityCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.shopping_bag_outlined,
+                          Icon(_getIconForCategory(category),
                               color: AppColors.white, size: 14),
                           const SizedBox(width: 4),
                           Text(
@@ -487,22 +420,22 @@ class ActivityCard extends StatelessWidget {
                         ],
                       ),
                       if (distanceKm != null) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 1),
                         Row(
                           children: [
                             const Icon(Icons.location_on,
-                              color: AppColors.white, size: 14),
+                                color: AppColors.white, size: 14),
                             const SizedBox(width: 4),
                             Text(
-                               '${distanceKm!.toStringAsFixed(1)} km away',
-                               style: const TextStyle(
-                                  color: AppColors.white, fontSize: 11),
-                                     ),
-                                      ],
-                                       ),
-                                       ],
+                              '${distanceKm!.toStringAsFixed(1)} km away',
+                              style: const TextStyle(
+                                  color: AppColors.white, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
                       if (duration != null && duration!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 1),
                         Row(
                           children: [
                             const Icon(Icons.access_time,
@@ -511,7 +444,7 @@ class ActivityCard extends StatelessWidget {
                             Text(
                               duration!,
                               style: const TextStyle(
-                                  color: AppColors.white, fontSize: 11),
+                                  color: AppColors.white, fontSize: 12),
                             ),
                           ],
                         ),
@@ -519,85 +452,81 @@ class ActivityCard extends StatelessWidget {
                     ],
                   ),
                 ),
-               Column(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    if (detailsUrl != null && detailsUrl!.isNotEmpty)
-      ElevatedButton(
-        onPressed: () async {
-          final uri = Uri.parse(detailsUrl!);
-          final launched = await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-
-          if (!launched) {
-            print('Could not launch $detailsUrl');
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.location_on, size: 14),
-            SizedBox(width: 4),
-            Text(
-              'View on map',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    if (ticketBooking && ticketLink != null && ticketLink!.isNotEmpty) ...[
-      const SizedBox(height: 8),
-      ElevatedButton(
-        onPressed: () async {
-          final uri = Uri.parse(ticketLink!);
-          final launched = await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-
-          if (!launched) {
-            print('Could not launch $ticketLink');
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.confirmation_num_outlined, size: 14),
-            SizedBox(width: 4),
-            Text(
-              'Book Ticket',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ],
-  ],
-),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (detailsUrl != null && detailsUrl!.isNotEmpty)
+                      ElevatedButton(
+                        onPressed: () async {
+                          final uri = Uri.parse(detailsUrl!);
+                          final launched = await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                          if (!launched) {
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.location_on, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'View on map',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (ticketBooking && ticketLink != null && ticketLink!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final uri = Uri.parse(ticketLink!);
+                          final launched = await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                          if (!launched) {
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.white,
+                          foregroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.confirmation_num_outlined, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Book Ticket',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),

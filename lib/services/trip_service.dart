@@ -106,7 +106,6 @@ class TripService {
         .from('trip_plans')
         .update({'status': 'completed'})
         .eq('trip_id', tripId);
-    print('✅ AI plan saved successfully');
   } catch (e) {
     rethrow;
   }
@@ -189,6 +188,69 @@ class TripService {
       return {'hasTicket': false, 'ticketLink': null};
     }
   }
+
+  static Future<void> updateAiResponse(String tripId, Map<String, dynamic> updatedPlan) async {
+    try {
+      await supabase
+          .from('ai_responses')
+          .update({
+            'full_response': jsonEncode(updatedPlan),
+            'summary': updatedPlan['summary'] ?? 'Trip plan updated',
+            'total_cost': updatedPlan['total_cost'] ?? 0,
+          })
+          .eq('trip_id', tripId);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getAiResponse(String tripId) async {
+    try {
+      final response = await supabase
+          .from('ai_responses')
+          .select()
+          .eq('trip_id', tripId)
+          .maybeSingle();
+      return response != null ? Map<String, dynamic>.from(response) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  static Future<void> updateTripPlan(String tripId, Map<String, dynamic> updatedPlan) async {
+  try {
+    final existingResponse = await supabase
+        .from('ai_responses')
+        .select()
+        .eq('trip_id', tripId)
+        .maybeSingle();
+    
+    if (existingResponse != null) {
+      await supabase
+          .from('ai_responses')
+          .update({
+            'full_response': jsonEncode(updatedPlan),
+            'summary': updatedPlan['summary'],
+            'total_cost': updatedPlan['total_cost'],
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('trip_id', tripId);
+    } else {
+      final user = AuthService.currentUser;
+      if (user != null) {
+        await supabase.from('ai_responses').insert({
+          'trip_id': tripId,
+          'user_id': user.id,
+          'full_response': jsonEncode(updatedPlan),
+          'summary': updatedPlan['summary'],
+          'total_cost': updatedPlan['total_cost'],
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
+    }
+  } catch (e) {
+    rethrow;
+  }
+}
 
   static double parseBudget(String budgetRange) {
     if (budgetRange == '10000+') return 10000.0;

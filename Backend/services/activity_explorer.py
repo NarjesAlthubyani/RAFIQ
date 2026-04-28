@@ -3,10 +3,8 @@ from typing import Any, Dict, List, Optional
 from Backend.utils.distance import haversine_km
 from Backend.adapters.db_adapter import fetch_db_activities
 
+RADIUS_KM = 15.0 
 
-RADIUS_KM = 15.0 # km radius for nearby activities
-
-# Helpers
 def bucket_from_minutes(minutes: Optional[int]) -> Optional[str]:
     if minutes is None:
         return None
@@ -34,11 +32,9 @@ async def get_activities(
 
         dist = haversine_km(lat, lng, item_lat, item_lng)
 
-        # Distance filter
         if dist > RADIUS_KM:
             continue
 
-        # Time filter (if user provided it)
         if available_minutes is not None:
             dur = item.get("durationMinutes")
             if dur is None:
@@ -62,7 +58,6 @@ async def get_activities(
                 if dur > int(available_minutes):
                     continue
 
-        # enrich output
         it = dict(item)
         it["distanceKm"] = round(dist, 3)
         if it.get("durationBucket") is None:

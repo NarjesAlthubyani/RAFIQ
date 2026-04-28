@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
 
@@ -21,7 +22,7 @@ class _ScanPageState extends State<ScanPage> {
   Map<String, dynamic>? _result;
   String? _error;
 
-  // ✅ تنسيق الاسم: nassif_house -> Nassif House
+
   String _formatLandmarkName(String raw) {
     if (raw.trim().isEmpty) return "";
     final words = raw.replaceAll("_", " ").split(" ");
@@ -65,7 +66,6 @@ class _ScanPageState extends State<ScanPage> {
     });
 
     try {
-      // ✅ للـ Android Emulator 
       final uri = Uri.parse('http://10.0.2.2:8000/api/landmarks/recognize');
 
       final request = http.MultipartRequest('POST', uri);
@@ -151,7 +151,6 @@ class _ScanPageState extends State<ScanPage> {
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: AppColors.secondary,
-                fontFamily: 'Georgia',
               ),
             ),
 
@@ -226,7 +225,7 @@ class _ScanPageState extends State<ScanPage> {
               ),
             ),
 
-            // ================= RESULT =================
+
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.only(top: 16),
@@ -254,7 +253,7 @@ class _ScanPageState extends State<ScanPage> {
 
                 final confidence = _result!["confidence"];
 
-                // تحويل confidence إلى نسبة مئوية
+
                 String confidenceText = "";
                 if (confidence != null) {
                   final c = (confidence is num)

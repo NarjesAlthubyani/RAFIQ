@@ -53,7 +53,7 @@ class TripPlanner:
         a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
         return R * 2 * math.asin(math.sqrt(a))
 
-    def calculate_travel_time(self, p1: Dict, p2: Dict) -> int:
+    def calculate_distance_time(self, p1: Dict, p2: Dict) -> int:
         distance = self.place_distance(p1, p2)
 
         if distance <= 1: return 5
@@ -128,7 +128,7 @@ class TripPlanner:
         def add(place, type_name):
             nonlocal current_time, last_place, last_was_food
 
-            travel = self.calculate_travel_time(last_place, place) if last_place else 0
+            travel = self.calculate_distance_time(last_place, place) if last_place else 0
             current_time += travel / 60
 
             duration = self.get_place_duration(place)

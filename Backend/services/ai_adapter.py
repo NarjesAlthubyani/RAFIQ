@@ -21,7 +21,7 @@ client = OpenAI(
 class AIEngineAPI:
     
     async def send_prompt(self, prompt: str) -> str:
-        model = "openrouter/free"
+        model = "nvidia/nemotron-nano-9b-v2"
     
         max_retries = 3
         for attempt in range(max_retries):

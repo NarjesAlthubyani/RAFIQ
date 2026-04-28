@@ -24,41 +24,54 @@ class CustomNavBar extends StatelessWidget {
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
-        child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          onTap: onTap,
-          iconSize: 35,
-          backgroundColor: AppColors.background,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.accent,
-          type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.near_me),
-              activeIcon: Icon(Icons.near_me),
-              label: 'Nearby',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(size: 38, Icons.camera_alt_outlined),
-              activeIcon: Icon(size: 38, Icons.camera_alt_sharp),
-              label: '  Scan a \nLandmark',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.airplanemode_active_outlined),
-              activeIcon: Icon(Icons.airplanemode_active),
-              label: 'My Trip',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+        child: Container(
+          height: 90, 
+          color: AppColors.background,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
+              _buildNavItem(Icons.map_outlined, Icons.map_rounded, 'Nearby\nActivities', 1),
+              _buildNavItem(Icons.camera_alt_outlined, Icons.camera_alt_sharp, 'Scan a\nLandmark', 2, customIconSize: 38),
+              _buildNavItem(Icons.airplanemode_active_outlined, Icons.airplanemode_active, 'My Trip', 3),
+              _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, IconData activeIcon, String label, int index, {double? customIconSize}) {
+    final isSelected = currentIndex == index;
+    final iconSize = customIconSize ?? 35.0; 
+    
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(index),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSelected ? activeIcon : icon,
+                color: isSelected ? AppColors.primary : AppColors.accent,
+                size: iconSize, 
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isSelected ? AppColors.primary : AppColors.accent,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

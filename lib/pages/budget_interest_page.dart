@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/budget_interest_controller.dart';
 import '../theme/app_colors.dart';
+import 'home_page.dart';
 import 'trip_loading_page.dart';
 
 class BudgetInterestPage extends StatelessWidget {
@@ -52,7 +53,13 @@ class _MyTripView extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.close, color: AppColors.textPrimary),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomePage(initialIndex: 3),
+              ),
+              (route) => false,
+            ),
           ),
         ],
       ),
@@ -385,7 +392,7 @@ class _MyTripView extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    Navigator.pop(context); // close dialog AFTER submit
+    Navigator.pop(context); 
 
     if (success) {
       Navigator.push(

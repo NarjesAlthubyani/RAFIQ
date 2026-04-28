@@ -22,7 +22,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late int _currentIndex;
-  String _userName = "User"; // Default name
+  String _userName = "User"; 
 
   final List<Widget> _pages = [
     const HomeContent(),
@@ -44,7 +44,6 @@ class _HomePageState extends State<HomePage> {
       final user = Supabase.instance.client.auth.currentUser;
       
       if (user != null) {
-        // Get name from user metadata
         final userName = user.userMetadata?['full_name'] ?? 
                         user.userMetadata?['name'] ?? 
                         user.email?.split('@').first ??
@@ -55,7 +54,6 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('Error loading user data: $e');
     }
   }
 
@@ -81,7 +79,6 @@ class HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the username from the parent widget
     final homePageState = context.findAncestorStateOfType<_HomePageState>();
     final userName = homePageState?._userName ?? "User";
 
@@ -91,7 +88,6 @@ class HomeContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER with dynamic user name
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -114,7 +110,7 @@ class HomeContent extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      userName, // Dynamic user name!
+                      userName, 
                       style: const TextStyle(
                         fontSize: 20, 
                         fontWeight: FontWeight.bold
@@ -144,7 +140,6 @@ class HomeContent extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // SEARCH BAR
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               decoration: BoxDecoration(
@@ -167,7 +162,6 @@ class HomeContent extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // TODAY'S ACTIVITIES
             const Text(
               "Today's activities",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -201,7 +195,6 @@ class HomeContent extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // RECOMMENDED ACTIVITIES
             const Text(
               "Recommended activities",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
