@@ -5,6 +5,7 @@ from Backend.adapters.db_adapter import fetch_db_activities
 
 RADIUS_KM = 15.0 
 
+# Convert minutes into readable duration bucket
 def bucket_from_minutes(minutes: Optional[int]) -> Optional[str]:
     if minutes is None:
         return None
@@ -23,6 +24,8 @@ async def get_activities(
     limit: int = 100,
     available_minutes: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
+    
+    # Fetch activities from database
     source_items = await fetch_db_activities(limit=500)
     results: List[Dict[str, Any]] = []
 
@@ -30,6 +33,7 @@ async def get_activities(
         item_lat = float(item["lat"])
         item_lng = float(item["lng"])
 
+        # Calculate distance between user and activity
         dist = haversine_km(lat, lng, item_lat, item_lng)
 
         if dist > RADIUS_KM:
@@ -42,6 +46,7 @@ async def get_activities(
 
             dur = int(dur)
 
+            # Match activity duration with user available time
             if available_minutes == 60:
                 if not (dur < 60):
                     continue
@@ -58,12 +63,18 @@ async def get_activities(
                 if dur > int(available_minutes):
                     continue
 
+        # Prepare result
         it = dict(item)
         it["distanceKm"] = round(dist, 3)
+
+        # Add duration category if not available
         if it.get("durationBucket") is None:
             it["durationBucket"] = bucket_from_minutes(it.get("durationMinutes"))
 
         results.append(it)
 
+    # Sort activities by distance (nearest first)
     results.sort(key=lambda x: x["distanceKm"])
+    
+    # Return limited number of results
     return results[:limit]

@@ -28,6 +28,7 @@ class _NearbyPageState extends State<NearbyPage> {
     _fetchActivities();
   }
 
+// Get user current location if permission is granted
   Future<Position?> _tryGetUserLocation() async {
     try {
       var permission = await Geolocator.checkPermission();
@@ -84,7 +85,8 @@ class _NearbyPageState extends State<NearbyPage> {
         'lng': lng.toString(),
         'limit': '50',
       };
-
+      
+      // Add time filter only when selected
       if (availableMinutes != null) {
         params['available_minutes'] = availableMinutes.toString();
       }
@@ -125,6 +127,7 @@ class _NearbyPageState extends State<NearbyPage> {
     setState(() => _searchQuery = query);
   }
 
+// Open duration filter and reload activities based on selection
   void _showFilters() async {
     final result = await showModalBottomSheet<String>(
       context: context,
@@ -301,7 +304,7 @@ class _NearbyPageState extends State<NearbyPage> {
     );
   }
 }
-
+// Card used to display activity information
 class ActivityCard extends StatelessWidget {
   final String title;
   final String category;
@@ -535,7 +538,7 @@ class ActivityCard extends StatelessWidget {
     );
   }
 }
-
+// Bottom sheet used to select activity duration filter
 class FiltersBottomSheet extends StatefulWidget {
   final String initialSelection;
   const FiltersBottomSheet({super.key, required this.initialSelection});

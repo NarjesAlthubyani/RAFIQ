@@ -22,7 +22,7 @@ class _ScanPageState extends State<ScanPage> {
   Map<String, dynamic>? _result;
   String? _error;
 
-
+ // Format landmark name for better display (e.g. nassif_house → Nassif House)
   String _formatLandmarkName(String raw) {
     if (raw.trim().isEmpty) return "";
     final words = raw.replaceAll("_", " ").split(" ");
@@ -32,6 +32,7 @@ class _ScanPageState extends State<ScanPage> {
     }).join(" ");
   }
 
+  // Pick image from gallery
   Future<void> _pickFromGallery() async {
     final XFile? img = await _picker.pickImage(source: ImageSource.gallery);
     if (!mounted) return;
@@ -43,7 +44,7 @@ class _ScanPageState extends State<ScanPage> {
       });
     }
   }
-
+  // Capture image using camera
   Future<void> _pickFromCamera() async {
     final XFile? img = await _picker.pickImage(source: ImageSource.camera);
     if (!mounted) return;
@@ -55,7 +56,7 @@ class _ScanPageState extends State<ScanPage> {
       });
     }
   }
-
+// Send selected image to backend for recognition
   Future<void> _submitToBackend() async {
     if (_pickedImage == null) return;
 
@@ -66,6 +67,7 @@ class _ScanPageState extends State<ScanPage> {
     });
 
     try {
+   // Endpoint used for landmark recognition
       final uri = Uri.parse('http://10.0.2.2:8000/api/landmarks/recognize');
 
       final request = http.MultipartRequest('POST', uri);
@@ -99,6 +101,7 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
+// Show options for selecting image source (camera or gallery)
   void _showPickOptions() {
     showModalBottomSheet(
       context: context,
@@ -225,13 +228,14 @@ class _ScanPageState extends State<ScanPage> {
               ),
             ),
 
-
+            // RESULT 
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.only(top: 16),
                 child: CircularProgressIndicator(),
               ),
 
+            // Display error message if request fails
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
@@ -243,6 +247,7 @@ class _ScanPageState extends State<ScanPage> {
 
             if (_result != null)
               Builder(builder: (context) {
+                // Check if the landmark was recognized
                 final recognized = (_result!["recognized"] == true);
 
                 final rawName = (_result!["landmark_name"] ?? "").toString();
@@ -251,24 +256,13 @@ class _ScanPageState extends State<ScanPage> {
                 final description =
                     (_result!["description"] ?? "").toString().trim();
 
-                final confidence = _result!["confidence"];
-
-
-                String confidenceText = "";
-                if (confidence != null) {
-                  final c = (confidence is num)
-                      ? confidence.toDouble()
-                      : double.tryParse(confidence.toString());
-                  if (c != null) {
-                    confidenceText = "${(c * 100).toStringAsFixed(1)}%";
-                  }
-                }
-
+                // Show error message if landmark is not recognized
                 if (!recognized) {
                   final errorMsg = (_result!["error"] ??
                           "Unable to Recognize Landmark")
                       .toString();
 
+                  // Show recognized landmark name and description
                   return Container(
                     margin: const EdgeInsets.only(top: 16),
                     padding: const EdgeInsets.all(16),
@@ -324,8 +318,6 @@ class _ScanPageState extends State<ScanPage> {
 
                       const SizedBox(height: 8),
 
-                      if (confidenceText.isNotEmpty)
-                        Text("Confidence: $confidenceText"),
                     ],
                   ),
                 );
@@ -425,6 +417,7 @@ class DashedBorderPainter extends CustomPainter {
         distance += dashWidth + dashSpace;
       }
     }
+
     canvas.drawPath(dashedPath, paint);
   }
 
