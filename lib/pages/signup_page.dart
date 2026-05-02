@@ -32,7 +32,7 @@ class _SignUpPageState extends State<SignUpPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account created! Please check your email for confirmation.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.accent,
           ),
         );
         
@@ -47,7 +47,7 @@ class _SignUpPageState extends State<SignUpPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.red,
           ),
         );
       }
@@ -68,7 +68,7 @@ class _SignUpPageState extends State<SignUpPage> {
         fit: StackFit.expand,
         children: [
           Image.asset('assets/riyadh.jpg', fit: BoxFit.cover),
-          Container(color: Colors.black.withOpacity(0.08)),
+          Container(color: AppColors.black.withOpacity(0.08)),
 
           SafeArea(
             child: Stack(
@@ -83,7 +83,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       'assets/account.png',
                       width: 120,
                       height: 120,
-                      color: Colors.white,
+                      color: AppColors.white,
                     ),
                   ),
                 ),
@@ -143,12 +143,12 @@ class _SignUpPageState extends State<SignUpPage> {
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white,
+                                color: AppColors.white,
                               )
                             : const Text(
                                 'Sign up',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
@@ -168,7 +168,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       Expanded(
                         child: Container(
                           height: 1,
-                          color: Colors.white.withOpacity(0.28),
+                          color: AppColors.white.withOpacity(0.28),
                         ),
                       ),
                       Padding(
@@ -176,7 +176,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         child: Text(
                           'or',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.60),
+                            color: AppColors.white.withOpacity(0.60),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -185,7 +185,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       Expanded(
                         child: Container(
                           height: 1,
-                          color: Colors.white.withOpacity(0.28),
+                          color: AppColors.white.withOpacity(0.28),
                         ),
                       ),
                     ],
@@ -246,14 +246,14 @@ class _SignUpPageState extends State<SignUpPage> {
                             TextSpan(
                               text: 'Already have an account? ',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontWeight: FontWeight.normal,
                               ),
                             ),
                             TextSpan(
                               text: 'Log in',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

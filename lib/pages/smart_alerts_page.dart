@@ -5,6 +5,7 @@ import '../services/weather_service.dart';
 import '../adapters/weather_adapter.dart';
 import '../services/supabase_config.dart';
 import '../services/auth_service.dart';
+import '../theme/app_colors.dart';
 
 // SmartAlertsPage is responsible for displaying real-time smart alerts
 // to the user based on weather conditions and stored alert data. 
@@ -86,14 +87,14 @@ Future<void> checkWeather() async {
     
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppColors.greyLight,
       // Page header
       appBar: AppBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: AppColors.transparent,
             elevation: 0,
             automaticallyImplyLeading: false,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -113,7 +114,7 @@ Future<void> checkWeather() async {
               const SizedBox(height: 5),
               const Text(
                 "Stay informed about your trip",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(fontSize: 16, color:AppColors.greyLight,),
               ),
               const SizedBox(height: 30),
 

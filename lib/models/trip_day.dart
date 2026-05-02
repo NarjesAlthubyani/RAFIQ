@@ -1,10 +1,14 @@
 import 'activity.dart';
 
 class TripDay {
-  final int day;
-  final DateTime date;
-  final List<Activity> activities;
-  final double dailyCost;
+
+  // Identification 
+  final int day;              
+  final DateTime date;       
+  
+  // Content 
+  final List<Activity> activities;  
+  final double dailyCost;           
 
   TripDay({
     required this.day,
@@ -13,10 +17,12 @@ class TripDay {
     required this.dailyCost,
   });
 
+  // Creates a TripDay from JSON data
   factory TripDay.fromJson(Map<String, dynamic> json, {
     required int dayNum,
     required DateTime date,
   }) {
+    // Extract activities list, default to empty if missing
     final activitiesList = json['activities'] as List? ?? [];
     
     return TripDay(
@@ -27,6 +33,7 @@ class TripDay {
     );
   }
 
+  // Converts TripDay to JSON for database storage
   Map<String, dynamic> toJson() => {
     'day_number': day,
     'date': date.toIso8601String(),

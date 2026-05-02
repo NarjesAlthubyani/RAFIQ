@@ -38,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.red,
           ),
         );
       }
@@ -64,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
           Image.asset('assets/riyadh.jpg', fit: BoxFit.cover),
 
           // Light overlay
-          Container(color: Colors.black.withOpacity(0.08)),
+          Container(color: AppColors.black.withOpacity(0.08)),
 
           SafeArea(
             child: Stack(
@@ -79,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
                       'assets/account.png',
                       width: 120,
                       height: 120,
-                      color: Colors.white,
+                      color: AppColors.white,
                     ),
                   ),
                 ),
@@ -126,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
                           TextSpan(
                             text: 'Forget your password? ',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(1.0),
+                              color: AppColors.white.withOpacity(1.0),
                               fontSize: 13,
                               fontWeight: FontWeight.w400,
                             ),
@@ -140,7 +140,7 @@ class _LoginPageState extends State<LoginPage> {
                               child: const Text(
                                 'Click me',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   decoration: TextDecoration.underline,
@@ -175,12 +175,12 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white,
+                                color: AppColors.white,
                               )
                             : const Text(
                                 'Log in',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -200,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(
                         child: Container(
                           height: 1,
-                          color: Colors.white.withOpacity(0.28),
+                          color: AppColors.white.withOpacity(0.28),
                         ),
                       ),
                       Padding(
@@ -208,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Text(
                           'or',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.60),
+                            color: AppColors.white.withOpacity(0.60),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -217,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(
                         child: Container(
                           height: 1,
-                          color: Colors.white.withOpacity(0.28),
+                          color: AppColors.white.withOpacity(0.28),
                         ),
                       ),
                     ],
@@ -267,7 +267,7 @@ class _LoginPageState extends State<LoginPage> {
                           TextSpan(
                             text: "Don't Have An Account? ",
                             style: TextStyle(
-                              color: Colors.white.withOpacity(1.0),
+                              color: AppColors.white.withOpacity(1.0),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w400,
                             ),
@@ -285,7 +285,7 @@ class _LoginPageState extends State<LoginPage> {
                               child: const Text(
                                 'Sign up',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                 ),

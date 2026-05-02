@@ -13,16 +13,20 @@ class MyTripsPage extends StatefulWidget {
 }
 
 class _MyTripsPageState extends State<MyTripsPage> {
-  List<Map<String, dynamic>> _trips = [];
-  bool _isLoading = true;
-  String? _errorMessage;
+ 
+  // State Variables
+  List<Map<String, dynamic>> _trips = [];  
+  bool _isLoading = true;                   
+  String? _errorMessage;                   
 
+  // Initialization
   @override
   void initState() {
     super.initState();
-    _loadUserTrips();
+    _loadUserTrips();  
   }
 
+  // Load User Trips from Database=
   Future<void> _loadUserTrips() async {
     setState(() {
       _isLoading = true;
@@ -32,7 +36,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
     try {
       final trips = await TripService.getUserTrips();
 
-      if (!mounted) return; 
+      if (!mounted) return;  
 
       setState(() {
         _trips = trips;
@@ -48,6 +52,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
     }
   }
 
+  // Formats date range for display (e.g., "May 1 to May 3, 2025")
   String _formatDateRange(String startDate, String endDate) {
     try {
       final start = DateTime.parse(startDate);
@@ -58,9 +63,11 @@ class _MyTripsPageState extends State<MyTripsPage> {
     }
   }
 
+  // Formats budget for compact display 
   String _formatBudget(dynamic budget) {
     double value = 0.0;
 
+    // Convert various input types to double
     if (budget is int) value = budget.toDouble();
     if (budget is double) value = budget;
     if (budget is String) value = double.tryParse(budget) ?? 0.0;
@@ -71,6 +78,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
     return value.toStringAsFixed(0);
   }
 
+  // Main Build Method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,6 +86,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Row(
@@ -90,6 +99,8 @@ class _MyTripsPageState extends State<MyTripsPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
+                  // Add new trip button only shown when trips exist
                   if (_trips.isNotEmpty && !_isLoading && _errorMessage == null)
                     GestureDetector(
                       onTap: () {
@@ -125,10 +136,13 @@ class _MyTripsPageState extends State<MyTripsPage> {
               ),
             ),
 
+            // Loading State 
             if (_isLoading)
               const Expanded(
                 child: Center(child: CircularProgressIndicator()),
               )
+              
+            // Error State 
             else if (_errorMessage != null)
               Expanded(
                 child: Center(
@@ -164,6 +178,8 @@ class _MyTripsPageState extends State<MyTripsPage> {
                   ),
                 ),
               )
+              
+            // Empty State (No Trips) 
             else if (_trips.isEmpty)
               Expanded(
                 child: Center(
@@ -173,7 +189,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                       Icon(
                         Icons.map_outlined,
                         size: 80,
-                        color:AppColors.greyDark,
+                        color: AppColors.greyDark,
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -220,6 +236,8 @@ class _MyTripsPageState extends State<MyTripsPage> {
                   ),
                 ),
               )
+              
+            // Trips List
             else
               Expanded(
                 child: RefreshIndicator(
@@ -244,7 +262,9 @@ class _MyTripsPageState extends State<MyTripsPage> {
     );
   }
 
+  // Trip Card Widget displays a single trip with image, city, dates, budget, and total cost
   Widget _buildTripCard(Map<String, dynamic> trip) {
+    // Extract AI response data if available
     final raw = trip['ai_responses'];
     final List<Map<String, dynamic>> aiResponses =
         raw is List ? List<Map<String, dynamic>>.from(raw) : [];
@@ -253,6 +273,8 @@ class _MyTripsPageState extends State<MyTripsPage> {
 
     return GestureDetector(
       onTap: () {
+
+        // Navigate to trip results page when tapped
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -282,6 +304,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // City Image 
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.asset(
@@ -299,6 +322,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                 ),
               ),
             ),
+            // Trip Info Footer 
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
@@ -307,10 +331,13 @@ class _MyTripsPageState extends State<MyTripsPage> {
               ),
               child: Row(
                 children: [
+                  // Left side: trip details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+
+                        // City name
                         Text(
                           trip['city'] ?? '',
                           style: const TextStyle(
@@ -320,6 +347,8 @@ class _MyTripsPageState extends State<MyTripsPage> {
                           ),
                         ),
                         const SizedBox(height: 1),
+
+                        // Budget
                         Row(
                           children: [
                             const Padding(
@@ -333,6 +362,8 @@ class _MyTripsPageState extends State<MyTripsPage> {
                             ),
                           ],
                         ),
+
+                        // Date range
                         Row(
                           children: [
                             const Padding(
@@ -342,10 +373,12 @@ class _MyTripsPageState extends State<MyTripsPage> {
                             const SizedBox(width: 6),
                             Text(
                               _formatDateRange(trip['start_date'], trip['end_date']),
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              style: const TextStyle(color: AppColors.white, fontSize: 13),
                             ),
                           ],
                         ),
+
+                        // Total cost badge 
                         if (aiResponse != null) ...[
                           const SizedBox(height: 8),
                           Container(
@@ -367,6 +400,8 @@ class _MyTripsPageState extends State<MyTripsPage> {
                       ],
                     ),
                   ),
+
+                  // Right side: options menu button
                   GestureDetector(
                     onTap: () => _showTripOptions(context, trip),
                     child: Container(
@@ -383,6 +418,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
     );
   }
 
+  // Trip Options
   void _showTripOptions(BuildContext context, Map<String, dynamic> trip) {
     showModalBottomSheet(
       context: context,
@@ -399,7 +435,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                 leading: const Icon(Icons.delete_outline, color: AppColors.primary),
                 title: const Text(
                   'Delete trip',
-                  style: TextStyle(color:Colors.red, fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: AppColors.red, fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -418,6 +454,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
     );
   }
 
+  // Delete Trip Confirmation Dialog
   void _confirmDeleteTrip(Map<String, dynamic> trip) {
     showDialog(
       context: context,
@@ -431,16 +468,17 @@ class _MyTripsPageState extends State<MyTripsPage> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
               onPressed: () async {
                 Navigator.pop(dialogContext);
 
                 try {
                   final success = await TripService.deleteTrip(trip['trip_id']);
 
-                  if (!mounted) return; 
+                  if (!mounted) return;  
 
                   if (success) {
+                    // Remove trip from local list
                     setState(() {
                       _trips.removeWhere((t) => t['trip_id'] == trip['trip_id']);
                     });
@@ -455,7 +493,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Failed to delete trip'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: AppColors.red,
                       ),
                     );
                   }
@@ -465,7 +503,7 @@ class _MyTripsPageState extends State<MyTripsPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: ${e.toString()}'),
-                      backgroundColor:Colors.red,
+                      backgroundColor: AppColors.red,
                     ),
                   );
                 }

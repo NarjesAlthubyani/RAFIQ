@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import '../services/trip_service.dart';
 import '../pages/trip_loading_page.dart';
 
+// Interest Model
 class Interest {
-  final String name;
-  final bool isSelected;
+  //Interest name & whether user has selected this interest
+  final String name; 
+  final bool isSelected;   
 
   Interest({required this.name, this.isSelected = false});
 
+  // Creates a copy of this interest with updated fields
   Interest copyWith({String? name, bool? isSelected}) {
     return Interest(
       name: name ?? this.name,
@@ -17,14 +20,19 @@ class Interest {
 }
 
 class MyTripController extends ChangeNotifier {
-  late String tripId;
-  late String preferenceId;
-  late String destination;
-  late DateTime fromDate;
-  late DateTime toDate;
+  
+  // Trip Data 
+  late String tripId;          
+  late String preferenceId;     
+  late String destination;      
+  late DateTime fromDate;       
+  late DateTime toDate;         
 
-  String? selectedBudgetRange = '2000 - 5000';
-
+  // Budget 
+  
+  String? selectedBudgetRange = '2000 - 5000';  // Currently selected budget
+  
+  // Available budget options for dropdown
   final List<String> budgetOptions = [
     '500 - 1000',
     '1000 - 2000',
@@ -33,13 +41,16 @@ class MyTripController extends ChangeNotifier {
     '10000+'
   ];
 
+  // Updates selected budget and notifies UI
   void setBudget(String value) {
     selectedBudgetRange = value;
     notifyListeners();
   }
 
-  List<Interest> interests = [];
+  // List of available interests
+  List<Interest> interests = [];  
 
+  // Initializes interest list based on destination city
   void initializeInterests(String destination) {
     List<Interest> base = [
       Interest(name: 'Culture'),
@@ -64,35 +75,42 @@ class MyTripController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Returns list of selected interest names
   List<String> get selectedInterests =>
       interests.where((i) => i.isSelected).map((i) => i.name).toList();
 
+  // Returns true if at least one interest is selected
   bool get canSubmit => selectedInterests.isNotEmpty;
 
+  // Review Data for confirmation dialog
+  
   String get reviewDestination => destination;
-
   String get reviewBudget => selectedBudgetRange ?? '';
-
   String get reviewDates =>
       '${fromDate.month}/${fromDate.day} - ${toDate.month}/${toDate.day}';
-
   List<String> get reviewInterests => selectedInterests;
 
-  bool isSubmitting = false;
-  String? errorMessage;
+  // Submission 
+  
+  bool isSubmitting = false;    
+  String? errorMessage;     
 
+  // Submits trip details to backend and navigates to loading page
   Future<bool> submitTrip() async {
     try {
       isSubmitting = true;
-      notifyListeners();
+      // Update UI to show loading state
+      notifyListeners();  
 
+      // Save trip details to database
       final result = await TripService.saveTripDetails(
         preferenceId: preferenceId,
         budgetRange: selectedBudgetRange!,
         selectedInterests: selectedInterests,
       );
 
-      tripId = result['trip']['trip_id'];
+      // Store generated trip ID
+      tripId = result['trip']['trip_id'];  
 
       isSubmitting = false;
       notifyListeners();
@@ -105,6 +123,7 @@ class MyTripController extends ChangeNotifier {
     }
   }
 
+  // Initializes controller 
   void initialize({
     required String prefId,
     required String dest,
@@ -116,6 +135,7 @@ class MyTripController extends ChangeNotifier {
     fromDate = from;
     toDate = to;
 
-    initializeInterests(dest);
+    // Set up interests 
+    initializeInterests(dest);  
   }
 }

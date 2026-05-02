@@ -24,6 +24,7 @@ class TripLoadingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Provide TripLoadingController and initialize with trip data
     return ChangeNotifierProvider(
       create: (_) => TripLoadingController()
         ..initialize(
@@ -46,6 +47,7 @@ class _TripLoadingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<TripLoadingController>();
 
+    // Navigate to results page when AI generation is complete
     if (controller.navigateToResults) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
@@ -67,7 +69,7 @@ class _TripLoadingView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.accent),
@@ -80,24 +82,25 @@ class _TripLoadingView extends StatelessWidget {
           ),
         ],
       ),
-
+      // Show error state or loading state
       body: controller.errorMessage != null
           ? _buildErrorState(context, controller)
           : _buildLoadingState(context, controller),
     );
   }
 
+  // Error State Widget displayed when AI generation fails
   Widget _buildErrorState(
       BuildContext context, TripLoadingController controller) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const Icon(Icons.error_outline, size: 64, color: AppColors.red),
           const SizedBox(height: 16),
           Text(
             'Error: ${controller.errorMessage}',
-            style: const TextStyle(color: Colors.red),
+            style: const TextStyle(color: AppColors.red),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -110,12 +113,14 @@ class _TripLoadingView extends StatelessWidget {
     );
   }
 
+  // Loading State Widget Shows animated loading screen with destination images
   Widget _buildLoadingState(
       BuildContext context, TripLoadingController controller) {
     return Column(
       children: [
         const SizedBox(height: 20),
 
+        // Main title
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
@@ -129,9 +134,9 @@ class _TripLoadingView extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
-
         const SizedBox(height: 8),
 
+        // Destination city name
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
@@ -144,9 +149,9 @@ class _TripLoadingView extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
-
         const SizedBox(height: 16),
 
+        // Rotating loading message
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
@@ -159,9 +164,9 @@ class _TripLoadingView extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
-
         const SizedBox(height: 20),
 
+        // Stack of destination images (side and center)
         Expanded(
           child: Stack(
             children: [
@@ -172,6 +177,7 @@ class _TripLoadingView extends StatelessWidget {
           ),
         ),
 
+        // Loading indicator with animated dots
         Padding(
           padding: const EdgeInsets.only(bottom: 60),
           child: _buildLoadingIndicator(controller),
@@ -180,6 +186,7 @@ class _TripLoadingView extends StatelessWidget {
     );
   }
 
+  // Side Image Widget 
   Widget _buildSideImage(String destination,
       {double? left, double? right, required double top}) {
     return Positioned(
@@ -217,6 +224,7 @@ class _TripLoadingView extends StatelessWidget {
     );
   }
 
+  // Center Image Widget
   Widget _buildCenterImage(String destination) {
     return Positioned(
       left: -20,
@@ -254,6 +262,7 @@ class _TripLoadingView extends StatelessWidget {
     );
   }
 
+  // Loading Indicator Widget 
   Widget _buildLoadingIndicator(TripLoadingController controller) {
     return SizedBox(
       width: 150,
@@ -261,6 +270,7 @@ class _TripLoadingView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Circular progress indicator
           SizedBox(
             width: 52,
             height: 52,

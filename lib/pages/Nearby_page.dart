@@ -259,7 +259,7 @@ class _NearbyPageState extends State<NearbyPage> {
                     Text(
                       'Failed to load activities\n$_error',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
+                      style: const TextStyle(color: AppColors.red),
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton(
@@ -358,7 +358,7 @@ class ActivityCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.black.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),

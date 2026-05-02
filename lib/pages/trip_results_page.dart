@@ -30,6 +30,7 @@ class TripResultsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Provide TripResultsController to the widget tree
     return ChangeNotifierProvider(
       create: (_) => TripResultsController(
         tripId: tripId,
@@ -50,6 +51,7 @@ class _TripResultsView extends StatelessWidget {
   const _TripResultsView({Key? key, required this.tripId, required this.destinationCity}) 
       : super(key: key);
 
+  // Returns appropriate icon for activity category
   IconData _getIconForCategory(String category) {
     switch (category.toLowerCase()) {
       case 'history': return Icons.history;
@@ -63,10 +65,12 @@ class _TripResultsView extends StatelessWidget {
     }
   }
 
+  // Formats date as month/day
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}';
   }
 
+  // Day Selection Dialog to allows user to choose which day to add activities to
   void _showDaySelectionDialog(
     BuildContext context,
     TripResultsController controller,
@@ -95,6 +99,7 @@ class _TripResultsView extends StatelessWidget {
                 onTap: () async {
                   Navigator.pop(sheetContext);
                   
+                  // Navigate to AddActivityPage and wait for result
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -105,6 +110,7 @@ class _TripResultsView extends StatelessWidget {
                         existingActivities: day.activities,
                         destinationCity: destinationCity,
                         onActivitiesAdded: (activities) async {
+                          // Add each selected activity to the day
                           for (var activity in activities) {
                             await controller.addActivity(day.day, activity);
                           }
@@ -122,10 +128,11 @@ class _TripResultsView extends StatelessWidget {
     );
   }
 
+  // Trip Options Menu
   void _showTripOptions(BuildContext context, TripResultsController controller, TripPlan plan) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -134,8 +141,8 @@ class _TripResultsView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete trip', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w600)),
+              leading: const Icon(Icons.delete_outline, color: AppColors.red),
+              title: const Text('Delete trip', style: TextStyle(color: AppColors.red, fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _confirmDeleteTrip(context, controller, plan);
@@ -152,6 +159,7 @@ class _TripResultsView extends StatelessWidget {
     );
   }
 
+  // Shows confirmation dialog before deleting entire trip
   void _confirmDeleteTrip(BuildContext context, TripResultsController controller, TripPlan plan) {
     showDialog(
       context: context,
@@ -165,7 +173,7 @@ class _TripResultsView extends StatelessWidget {
               child: const Text('Cancel', style: TextStyle(color: AppColors.black)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 final success = await controller.deleteTrip();
@@ -189,10 +197,11 @@ class _TripResultsView extends StatelessWidget {
     );
   }
 
+  // Activity Options Menu
   void _showActivityOptions(BuildContext context, TripResultsController controller, Activity activity) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -201,8 +210,8 @@ class _TripResultsView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete activity', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w600)),
+              leading: const Icon(Icons.delete_outline, color: AppColors.red),
+              title: const Text('Delete activity', style: TextStyle(color: AppColors.red, fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _confirmDeleteActivity(context, controller, activity);
@@ -219,6 +228,7 @@ class _TripResultsView extends StatelessWidget {
     );
   }
 
+  // Shows confirmation dialog before deleting a single activity
   void _confirmDeleteActivity(BuildContext context, TripResultsController controller, Activity activity) {
     showDialog(
       context: context,
@@ -232,7 +242,7 @@ class _TripResultsView extends StatelessWidget {
               child: const Text('Cancel', style: TextStyle(color: AppColors.black)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
               onPressed: () {
                 Navigator.pop(dialogContext);
                 controller.deleteActivity(activity);
@@ -250,10 +260,12 @@ class _TripResultsView extends StatelessWidget {
     );
   }
 
+  // Main Build Method
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<TripResultsController>();
 
+    // Show loading indicator while fetching trip data
     if (controller.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -278,7 +290,7 @@ class _TripResultsView extends StatelessWidget {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(left: 16.0, bottom: 16.0),
         child: FloatingActionButton(
-          heroTag: null,
+          heroTag: null,  // Prevents Hero animation conflicts
           onPressed: () => _showDaySelectionDialog(context, controller, days),
           shape: const CircleBorder(),
           backgroundColor: AppColors.primary,
@@ -287,14 +299,16 @@ class _TripResultsView extends StatelessWidget {
       ),
     );
   }
-
+ 
+  // Header Widget 
   Widget _buildHeader(TripPlan plan, BuildContext context) {
     return Container(
       height: 280,
-      decoration: BoxDecoration(color: Colors.grey.shade200),
+      decoration: BoxDecoration(color: AppColors.greyLight),
       child: Stack(
         fit: StackFit.expand,
         children: [
+          // Background image of the destination city
           Image.asset(
             'assets/${plan.destinationCity.toLowerCase()}.jpg',
             fit: BoxFit.cover,
@@ -305,6 +319,8 @@ class _TripResultsView extends StatelessWidget {
               );
             },
           ),
+
+          // Dark gradient overlay for text readability
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -314,6 +330,8 @@ class _TripResultsView extends StatelessWidget {
               ),
             ),
           ),
+
+          // City name and trip info overlay
           Positioned(
             bottom: 0,
             left: 0,
@@ -337,6 +355,7 @@ class _TripResultsView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Budget display
                             Row(
                               children: [
                                 const Icon(Icons.attach_money, color: AppColors.white, size: 18),
@@ -345,6 +364,7 @@ class _TripResultsView extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 8),
+                            // Date range display
                             Row(
                               children: [
                                 const Icon(Icons.calendar_today, color: AppColors.white, size: 16),
@@ -362,6 +382,8 @@ class _TripResultsView extends StatelessWidget {
               ),
             ),
           ),
+
+          // Back and menu buttons
           Positioned(
             top: MediaQuery.of(context).padding.top + 12,
             left: 16,
@@ -396,20 +418,22 @@ class _TripResultsView extends StatelessWidget {
     );
   }
 
+  // Day Tabs 
   Widget _buildDayTabs(BuildContext context, List<TripDay> days, TripResultsController controller) {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: AppColors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
+        border: Border(bottom: BorderSide(color: AppColors.greyLight, width: 1)),
       ),
       child: Row(
         children: [
+          // Scrollable list of day tabs
           Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: days.length + 1,
+              itemCount: days.length + 1,  // +1 for "All" tab
               itemBuilder: (context, index) {
                 final isSelected = controller.selectedDay == index;
                 final label = index == 0 ? 'All' : 'Day ${days[index - 1].day}';
@@ -421,22 +445,24 @@ class _TripResultsView extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isSelected ? AppColors.primary : AppColors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: 1.5),
+                      border: Border.all(color: isSelected ? AppColors.primary : AppColors.greyLight, width: 1.5),
                     ),
                     child: Center(
                       child: Text(label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, 
-                        color: isSelected ? AppColors.white : Colors.grey.shade700)),
+                        color: isSelected ? AppColors.white : AppColors.greyDark)),
                     ),
                   ),
                 );
               },
             ),
           ),
+
+          // Quick add button for current selected day
           Container(
             width: 40,
             height: 40,
             margin: const EdgeInsets.only(left: 8),
-            decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: AppColors.greyLight, borderRadius: BorderRadius.circular(20)),
             child: IconButton(
               onPressed: () async {
                 if (controller.selectedDay > 0 && controller.selectedDay - 1 < days.length) {
@@ -468,7 +494,7 @@ class _TripResultsView extends StatelessWidget {
                   _showDaySelectionDialog(context, controller, days);
                 }
               },
-              icon: Icon(Icons.add, color: Colors.grey.shade600, size: 20),
+              icon: Icon(Icons.add, color: AppColors.greyDark, size: 20),
               padding: EdgeInsets.zero,
             ),
           ),
@@ -477,7 +503,9 @@ class _TripResultsView extends StatelessWidget {
     );
   }
 
+  // Day List
   Widget _buildDayList(List<TripDay> days, TripResultsController controller) {
+    // Filter days based on selected tab, All or specific day
     final filteredDays = controller.selectedDay == 0 ? days : [days[controller.selectedDay - 1]];
     return ListView.builder(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 94),
@@ -488,6 +516,7 @@ class _TripResultsView extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Day header with expand/collapse toggle
             GestureDetector(
               onTap: () => controller.toggleDay(day.day),
               child: Container(
@@ -502,6 +531,7 @@ class _TripResultsView extends StatelessWidget {
                 ),
               ),
             ),
+            // Activities (visible when expanded)
             if (isExpanded)
               Column(children: day.activities.map((activity) => _buildActivityCard(context, activity, controller)).toList()),
             const SizedBox(height: 14),
@@ -511,6 +541,7 @@ class _TripResultsView extends StatelessWidget {
     );
   }
 
+  // Activity Card Widget
   Widget _buildActivityCard(BuildContext context, Activity activity, TripResultsController controller) {
     final icon = _getIconForCategory(activity.category);
     return Container(
@@ -518,19 +549,20 @@ class _TripResultsView extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(color: AppColors.greyLight, width: 1),
         boxShadow: [BoxShadow(color: AppColors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Activity image with options menu
           Stack(
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
                 child: activity.imageUrl != null && activity.imageUrl!.isNotEmpty
                     ? Image.network(activity.imageUrl!, height: 160, width: double.infinity, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(height: 160, color: Colors.grey.shade300, child: const Icon(Icons.image, size: 40)))
+                        errorBuilder: (_, __, ___) => Container(height: 160, color: AppColors.greyLight, child: const Icon(Icons.image, size: 40)))
                     : Container(height: 160, color: AppColors.accent.withOpacity(0.3), child: const Icon(Icons.image, size: 40)),
               ),
               Positioned(
@@ -544,6 +576,7 @@ class _TripResultsView extends StatelessWidget {
               ),
             ],
           ),
+          // Activity details and action buttons
           Container(
             decoration: BoxDecoration(
               color: AppColors.accent,
@@ -553,6 +586,7 @@ class _TripResultsView extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Left side: activity name and category
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,9 +603,11 @@ class _TripResultsView extends StatelessWidget {
                     ],
                   ),
                 ),
+                // Right side: action buttons, View on map, Book Ticket
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // View on map button
                     if (activity.locationLink != null && activity.locationLink!.isNotEmpty)
                       ElevatedButton(
                         onPressed: () async {
@@ -606,6 +642,7 @@ class _TripResultsView extends StatelessWidget {
                           ],
                         ),
                       ),
+                    // Book Ticket button
                     if (activity.ticketBooking && activity.ticketLink != null && activity.ticketLink!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       ElevatedButton(

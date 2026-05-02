@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AIPlannerService {
+
+  // Backend API URL
   static const String baseUrl = 'http://10.0.2.2:8000';
 
+  // Request AI trip plan from backend
   static Future<Map<String, dynamic>> planTrip({
     required String city,
     required int days,
@@ -11,6 +14,7 @@ class AIPlannerService {
     required double budget,
   }) async {
     try {
+      // Send POST request to backend
       final response = await http
           .post(
             Uri.parse('$baseUrl/api/trip-planner/plan'),
@@ -22,18 +26,21 @@ class AIPlannerService {
               'budget': budget,
             }),
           )
-          .timeout(const Duration(seconds: 90));
+          .timeout(const Duration(seconds: 90));  
 
+      // Return parsed JSON on success
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
 
+      // Return empty fallback on failure
       return {
         'days': [],
         'total_cost': 0,
         'summary': 'Failed to generate trip plan. Please try again.'
       };
     } catch (e) {
+      // Return connection error fallback
       return {
         'days': [],
         'total_cost': 0,

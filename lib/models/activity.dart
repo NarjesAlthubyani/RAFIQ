@@ -1,18 +1,28 @@
 class Activity {
-  final String name;
-  final String category;
-  final String description;
-  final double cost;
-  final int durationMinutes;
-  final String? imageUrl;
-  final String? locationLink;
-  final String? ticketLink;
-  final bool ticketBooking;
-  final double lat;
-  final double lng;
-  final String time;
-  final String type;
 
+  // Activity Information 
+  final String name;           
+  final String category;      
+  final String description;   
+  
+  // Cost & Duration 
+  final double cost;           
+  final int durationMinutes;   
+  
+  // Media & Links 
+  final String? imageUrl;     
+  final String? locationLink;  
+  final String? ticketLink;   
+  final bool ticketBooking;    
+  
+  // Location & Time 
+  final double lat;            
+  final double lng;         
+  final String time;         
+  
+  // Type 
+  final String type;          
+  
   Activity({
     required this.name,
     required this.category,
@@ -29,17 +39,26 @@ class Activity {
     required this.type,
   });
 
+  // Creates an Activity from JSON data 
   factory Activity.fromJson(Map<String, dynamic> json) {
     return Activity(
+
+      // Basic info 
       name: json['name']?.toString() ?? '',
       category: json['category']?.toString() ?? 'General',
       description: json['description']?.toString() ?? '',
+      
+      // Cost and duration
       cost: (json['cost'] ?? 0).toDouble(),
       durationMinutes: (json['duration'] ?? json['duration_minutes'] ?? 60).toInt(),
+      
+      // Optional links
       imageUrl: json['image_url']?.toString(),
       locationLink: json['location_link']?.toString(),
       ticketLink: json['ticket_link']?.toString(),
       ticketBooking: json['ticket_booking'] ?? false,
+      
+      // Coordinates and time
       lat: (json['lat'] ?? 0).toDouble(),
       lng: (json['lng'] ?? 0).toDouble(),
       time: json['time']?.toString() ?? '',
@@ -47,6 +66,7 @@ class Activity {
     );
   }
 
+  // Converts Activity to JSON for saving to database
   Map<String, dynamic> toJson() => {
     'name': name,
     'category': category,

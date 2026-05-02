@@ -1,16 +1,26 @@
 import 'trip_day.dart';
 
 class TripPlan {
-  final int tripId;
-  final String destinationCity;
-  final DateTime startDate;
-  final DateTime endDate;
-  final int daysCount;
-  final double totalCost;
-  final String summary;
-  final List<TripDay> days;
-  final String budgetRange;
-  final List<String> selectedInterests;
+
+  // Identification 
+  final int tripId;             
+  final String destinationCity;  
+  
+  // Dates 
+  final DateTime startDate;      
+  final DateTime endDate;        
+  final int daysCount;           
+  
+  // Financial 
+  final double totalCost;        
+  final String budgetRange;     
+  
+  // Content 
+  final String summary;         
+  final List<TripDay> days;     
+  
+  // User Preferences 
+  final List<String> selectedInterests;  
 
   TripPlan({
     required this.tripId,
@@ -25,6 +35,7 @@ class TripPlan {
     required this.selectedInterests,
   });
 
+  // Creates a TripPlan from JSON data (from API/database)
   factory TripPlan.fromJson(Map<String, dynamic> json, {
     required String tripId,
     required String destinationCity,
@@ -32,15 +43,17 @@ class TripPlan {
     required String budgetRange,
     required List<String> selectedInterests,
   }) {
+    // Extract days list, default to empty if missing
     final daysList = json['days'] as List? ?? [];
     final days = <TripDay>[];
 
+    // Build each day with sequential dates
     for (int i = 0; i < daysList.length; i++) {
       final dayData = daysList[i];
       days.add(TripDay.fromJson(
         dayData,
-        dayNum: dayData['day'] ?? i + 1,
-        date: startDate.add(Duration(days: i)),
+        dayNum: dayData['day'] ?? i + 1,    
+        date: startDate.add(Duration(days: i)), 
       ));
     }
 
@@ -58,6 +71,7 @@ class TripPlan {
     );
   }
 
+  // Converts TripPlan to JSON for database storage
   Map<String, dynamic> toJson() => {
     'trip_id': tripId,
     'destination_city': destinationCity,

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart'; 
 
 class AddActivityPage extends StatefulWidget {
+  // Trip information
   final String tripId;
   final int dayNumber;
   final DateTime dayDate;
@@ -29,17 +30,23 @@ class AddActivityPage extends StatefulWidget {
 }
 
 class _AddActivityPageState extends State<AddActivityPage> {
+
+  // Backend API URL 
   static const String _baseUrl = 'http://10.0.2.2:8000';
   
+  // City coordinates for fallback when location is unavailable
   final Map<String, Map<String, double>> _cityCoordinates = {
     'Riyadh': {'lat': 24.7136, 'lng': 46.6753},
     'Jeddah': {'lat': 21.5433, 'lng': 39.1728},
     'AlUla': {'lat': 26.6515, 'lng': 37.9081},
   };
   
-  List<NearbyActivity> _allActivities = [];
-  List<NearbyActivity> _availableActivities = [];
-  Set<NearbyActivity> _selectedActivities = {};
+  // Data state
+  List<NearbyActivity> _allActivities = [];          
+  List<NearbyActivity> _availableActivities = [];     
+  Set<NearbyActivity> _selectedActivities = {};       
+  
+  // UI state
   bool _isLoading = false;
   bool _isAdding = false;
   String? _error;
@@ -50,24 +57,18 @@ class _AddActivityPageState extends State<AddActivityPage> {
     _fetchActivities();
   }
 
+  // Get Current Location 
   Future<Position?> _getCurrentLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        return null;
-      }
+      if (!serviceEnabled) return null;
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return null;
-        }
+        if (permission == LocationPermission.denied) return null;
       }
-
-      if (permission == LocationPermission.deniedForever) {
-        return null;
-      }
+      if (permission == LocationPermission.deniedForever) return null;
 
       return await Geolocator.getCurrentPosition();
     } catch (e) {
@@ -75,58 +76,57 @@ class _AddActivityPageState extends State<AddActivityPage> {
     }
   }
 
+  // Fetch Activities from API
   Future<void> _fetchActivities() async {
-  setState(() {
-    _isLoading = true;
-    _error = null;
-  });
-
-  try {
-    final coordinates = _cityCoordinates[widget.destinationCity];
-    
-    if (coordinates == null) {
-      throw Exception('Coordinates not found for city: ${widget.destinationCity}');
-    }
-
-    final lat = coordinates['lat']!;
-    final lng = coordinates['lng']!;
-
-    print('Fetching activities for ${widget.destinationCity} at lat: $lat, lng: $lng');
-
-    final params = <String, String>{
-      'lat': lat.toString(),
-      'lng': lng.toString(),
-      'limit': '100',
-    };
-
-    final uri = Uri.parse('$_baseUrl/activities').replace(queryParameters: params);
-    final res = await http.get(uri);
-
-    if (res.statusCode != 200) {
-      throw Exception('HTTP ${res.statusCode}');
-    }
-
-    final List data = jsonDecode(res.body);
-    final fetched = data.map((item) => NearbyActivity.fromJson(item)).toList();
-
-    _allActivities = fetched;
-    _filterAvailableActivities();
-
-    print('Found ${fetched.length} activities for ${widget.destinationCity}');
-
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
+      _error = null;
     });
-  } catch (e) {
-    print('Error: $e');
-    setState(() {
-      _isLoading = false;
-      _error = e.toString();
-      _allActivities = [];
-      _availableActivities = [];
-    });
+
+    try {
+
+      // Use city coordinates 
+      final coordinates = _cityCoordinates[widget.destinationCity];
+      if (coordinates == null) {
+        throw Exception('Coordinates not found for city: ${widget.destinationCity}');
+      }
+
+      final lat = coordinates['lat']!;
+      final lng = coordinates['lng']!;
+
+      final params = <String, String>{
+        'lat': lat.toString(),
+        'lng': lng.toString(),
+        'limit': '100',
+      };
+
+      final uri = Uri.parse('$_baseUrl/activities').replace(queryParameters: params);
+      final res = await http.get(uri);
+
+      if (res.statusCode != 200) {
+        throw Exception('HTTP ${res.statusCode}');
+      }
+
+      final List data = jsonDecode(res.body);
+      final fetched = data.map((item) => NearbyActivity.fromJson(item)).toList();
+
+      _allActivities = fetched;
+      _filterAvailableActivities();
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+        _allActivities = [];
+        _availableActivities = [];
+      });
+    }
   }
-}
+  
+  // Filter out already added activities
   void _filterAvailableActivities() {
     final existingTitles = widget.existingActivities.map((a) => a.name).toSet();
     _availableActivities = _allActivities.where((activity) => 
@@ -137,6 +137,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     );
   }
 
+  // Add Selected Activities to Trip
   Future<void> _addSelectedActivities() async {
     if (_selectedActivities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -144,14 +145,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
       );
       return;
     }
-
     setState(() => _isAdding = true);
 
     try {
       final selectedList = _selectedActivities.toList();
       
+      // Callback to parent page to add activities
       await widget.onActivitiesAdded(selectedList);
       
+      // Remove added activities from available list
       setState(() {
         for (var activity in selectedList) {
           _availableActivities.remove(activity);
@@ -167,20 +169,22 @@ class _AddActivityPageState extends State<AddActivityPage> {
           ),
         );
         
-        Future.delayed(const Duration(milliseconds: 500), () {
+        // Return to previous page after short delay
+        Future.delayed(const Duration(milliseconds: 400), () {
           if (mounted) Navigator.pop(context, true);
         });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.red),
         );
       }
       setState(() => _isAdding = false);
     }
   }
 
+  // Toggle Activity Selection
   void _toggleSelection(NearbyActivity activity) {
     setState(() {
       if (_selectedActivities.contains(activity)) {
@@ -191,6 +195,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     });
   }
 
+  // Get Icon Based on Category
   IconData _getIconForCategory(String category) {
     switch (category.toLowerCase()) {
       case 'history': return Icons.history;
@@ -204,6 +209,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     }
   }
 
+  // Build Method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,13 +220,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          
+          // Add button with count
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: ElevatedButton(
               onPressed: _isAdding ? null : _addSelectedActivities,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
               ),
               child: _isAdding
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
@@ -231,6 +239,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       ),
       body: Column(
         children: [
+          // Header with activity count
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
             child: Row(
@@ -248,15 +257,18 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   ),
                   child: Text(
                     '${_availableActivities.length}',
-                    style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 12, color: AppColors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
           ),
 
+          // Loading state
           if (_isLoading)
             const Expanded(child: Center(child: CircularProgressIndicator()))
+            
+          // Error state
           else if (_error != null)
             Expanded(
               child: Center(
@@ -270,13 +282,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 ),
               ),
             )
+            
+          // Empty state (all activities added)
           else if (_availableActivities.isEmpty)
             Expanded(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle, size: 64, color: Colors.green),
+                    const Icon(Icons.check_circle, size: 64, color: AppColors.secondary),
                     const SizedBox(height: 16),
                     const Text('All activities added!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
@@ -291,6 +305,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 ),
               ),
             )
+            
+          // Activities list
           else
             Expanded(
               child: ListView.separated(
@@ -309,26 +325,32 @@ class _AddActivityPageState extends State<AddActivityPage> {
     );
   }
 
+  // ============================================================
+  // Activity Card Widget
+  // ============================================================
+  
   Widget _buildActivityCard(NearbyActivity activity, bool isSelected) {
     return GestureDetector(
       onTap: () => _toggleSelection(activity),
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade200, width: isSelected ? 2 : 1),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+          border: Border.all(color: isSelected ? AppColors.primary : AppColors.greyLight, width: isSelected ? 2 : 1),
+          boxShadow: [BoxShadow(color: AppColors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Activity image
             ClipRRect(
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
               child: (activity.imageUrl != null && activity.imageUrl!.isNotEmpty)
                   ? Image.network(activity.imageUrl!, width: double.infinity, height: 160, fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(height: 160, color: Colors.grey.shade300, child: const Icon(Icons.image, size: 40)))
+                      errorBuilder: (context, error, stackTrace) => Container(height: 160, color: AppColors.greyLight, child: const Icon(Icons.image, size: 40)))
                   : Container(height: 160, color: AppColors.accent.withOpacity(0.3), child: const Icon(Icons.image, size: 40)),
             ),
+            // Activity info
             Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
@@ -349,6 +371,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       ],
                     ),
                   ),
+                  // Selection indicator
                   if (isSelected)
                     const Icon(Icons.check_circle, color: AppColors.primary, size: 24),
                 ],

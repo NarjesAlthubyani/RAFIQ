@@ -6,6 +6,7 @@ import 'home_page.dart';
 import 'trip_loading_page.dart';
 
 class BudgetInterestPage extends StatelessWidget {
+
   final String preferenceId;
   final String destination;
   final DateTime fromDate;
@@ -51,6 +52,8 @@ class _MyTripView extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+
+          // Close button returns to home
           IconButton(
             icon: Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: () => Navigator.pushAndRemoveUntil(
@@ -81,6 +84,7 @@ class _MyTripView extends StatelessWidget {
     );
   }
 
+  // Step Indicator 
   Widget _buildStepIndicator(BuildContext context) {
     return Column(
       children: [
@@ -108,7 +112,7 @@ class _MyTripView extends StatelessWidget {
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: 1.0,
+              widthFactor: 1.0,  // Full progress (step 2 of 2)
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.primary,
@@ -122,6 +126,7 @@ class _MyTripView extends StatelessWidget {
     );
   }
 
+  // Main Card Budget & Interests
   Widget _buildCard(BuildContext context, MyTripController controller) {
     return Container(
       width: double.infinity,
@@ -143,6 +148,7 @@ class _MyTripView extends StatelessWidget {
         children: [
           const SizedBox(height: 4),
 
+          // Budget section
           Text(
             'Budget Range',
             style: TextStyle(
@@ -155,6 +161,7 @@ class _MyTripView extends StatelessWidget {
           _buildBudgetDropdown(controller),
           const SizedBox(height: 22),
 
+          // Interests section
           Text(
             'Select your interests',
             style: TextStyle(
@@ -172,7 +179,7 @@ class _MyTripView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-
+          // Interest chips
           controller.interests.isEmpty
               ? Center(
                   child: Padding(
@@ -228,6 +235,7 @@ class _MyTripView extends StatelessWidget {
     );
   }
 
+  // Budget Dropdown Widget
   Widget _buildBudgetDropdown(MyTripController controller) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -284,8 +292,8 @@ class _MyTripView extends StatelessWidget {
     );
   }
 
-  Widget _buildSubmitButton(
-      BuildContext context, MyTripController controller) {
+  // Submit Button
+  Widget _buildSubmitButton(BuildContext context, MyTripController controller) {
     return Center(
       child: SizedBox(
         width: 200,
@@ -317,8 +325,8 @@ class _MyTripView extends StatelessWidget {
     );
   }
 
-  void _showReviewDialog(
-      BuildContext context, MyTripController controller) {
+  // Review Dialog confirmation before creating trip
+  void _showReviewDialog(BuildContext context, MyTripController controller) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -376,6 +384,7 @@ class _MyTripView extends StatelessWidget {
           ],
         ),
         actions: [
+          // Back button
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
@@ -386,51 +395,53 @@ class _MyTripView extends StatelessWidget {
               ),
             ),
           ),
+          // Create Trip Plan button
           ElevatedButton(
-  onPressed: () async {
-    final success = await controller.submitTrip();
+            onPressed: () async {
+              final success = await controller.submitTrip();
 
-    if (!context.mounted) return;
+              if (!context.mounted) return;
 
-    Navigator.pop(context); 
+              Navigator.pop(context); 
 
-    if (success) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TripLoadingPage(
-            tripId: controller.tripId,
-            destination: controller.destination,
-            fromDate: controller.fromDate,
-            toDate: controller.toDate,
-            budgetRange: controller.selectedBudgetRange!,
-            selectedInterests: controller.selectedInterests,
-          ),
-        ),
-      );
-    } else if (controller.errorMessage != null) {
-      _showErrorDialog(context, controller.errorMessage!);
-    }
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: AppColors.secondary,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-  ),
-  child: Text(
-    'Create Trip Plan',
-    style: TextStyle(
-      color: AppColors.white,
-      fontWeight: FontWeight.w600,
-    ),
-  ),
-)
+              if (success) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TripLoadingPage(
+                      tripId: controller.tripId,
+                      destination: controller.destination,
+                      fromDate: controller.fromDate,
+                      toDate: controller.toDate,
+                      budgetRange: controller.selectedBudgetRange!,
+                      selectedInterests: controller.selectedInterests,
+                    ),
+                  ),
+                );
+              } else if (controller.errorMessage != null) {
+                _showErrorDialog(context, controller.errorMessage!);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Create Trip Plan',
+              style: TextStyle(
+                color: AppColors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          )
         ],
       ),
     );
   }
 
+  // Error Dialog
   void _showErrorDialog(BuildContext context, String error) {
     showDialog(
       context: context,

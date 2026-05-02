@@ -20,10 +20,12 @@ class DestinationDatePage extends StatelessWidget {
 class _DestinationDateView extends StatelessWidget {
   const _DestinationDateView({Key? key}) : super(key: key);
 
+  // Format date 
   String _formatDate(DateTime date) {
     return DateFormat('MMM d, yyyy').format(date);
   }
 
+  // Format month/year 
   String _formatMonthYear(DateTime date) {
     return DateFormat('MMMM yyyy').format(date);
   }
@@ -60,6 +62,7 @@ class _DestinationDateView extends StatelessWidget {
                 _buildHeader(),
                 const SizedBox(height: 24),
 
+                // Main card container
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -78,6 +81,7 @@ class _DestinationDateView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Destination dropdown
                       const Text(
                         'Destination',
                         style: TextStyle(
@@ -103,9 +107,7 @@ class _DestinationDateView extends StatelessWidget {
                             icon: Icon(Icons.arrow_drop_down,
                                 color: AppColors.secondary),
                             onChanged: (value) {
-                              if (value != null) {
-                                controller.setDestination(value);
-                              }
+                              if (value != null) controller.setDestination(value);
                             },
                             items: ['Jeddah', 'Riyadh', 'AlUla']
                                 .map(
@@ -134,6 +136,7 @@ class _DestinationDateView extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
+                      // From - To date pickers
                       const Text(
                         'From - To',
                         style: TextStyle(
@@ -146,6 +149,7 @@ class _DestinationDateView extends StatelessWidget {
 
                       Row(
                         children: [
+                          // From date picker
                           Expanded(
                             child: GestureDetector(
                               onTap: () => controller.pickDate(
@@ -186,6 +190,7 @@ class _DestinationDateView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 16),
+                          // To date picker
                           Expanded(
                             child: GestureDetector(
                               onTap: () => controller.pickDate(
@@ -230,6 +235,7 @@ class _DestinationDateView extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
+                      // Calendar month 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -244,14 +250,12 @@ class _DestinationDateView extends StatelessWidget {
                           Row(
                             children: [
                               IconButton(
-                                onPressed: () =>
-                                    controller.changeMonth(-1),
+                                onPressed: () => controller.changeMonth(-1),
                                 icon: Icon(Icons.chevron_left,
                                     size: 32, color: AppColors.primary),
                               ),
                               IconButton(
-                                onPressed: () =>
-                                    controller.changeMonth(1),
+                                onPressed: () => controller.changeMonth(1),
                                 icon: Icon(Icons.chevron_right,
                                     size: 32, color: AppColors.primary),
                               ),
@@ -268,6 +272,7 @@ class _DestinationDateView extends StatelessWidget {
 
                 const SizedBox(height: 28),
 
+                // Next button
                 Center(
                   child: SizedBox(
                     width: 180,
@@ -276,8 +281,7 @@ class _DestinationDateView extends StatelessWidget {
                       onPressed: controller.fromDate != null &&
                               controller.toDate != null
                           ? () async {
-                              final id =
-                                  await controller.saveTripRequest();
+                              final id = await controller.saveTripRequest();
                               if (id != null && context.mounted) {
                                 Navigator.push(
                                   context,
@@ -294,11 +298,10 @@ class _DestinationDateView extends StatelessWidget {
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            controller.fromDate != null &&
-                                    controller.toDate != null
-                                ? AppColors.secondary
-                                : AppColors.greyLight,
+                        backgroundColor: controller.fromDate != null &&
+                                controller.toDate != null
+                            ? AppColors.secondary
+                            : AppColors.greyLight,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -323,8 +326,9 @@ class _DestinationDateView extends StatelessWidget {
         ),
       ),
     );
-  }}
+  }
 
+  // Step Indicator 
   Widget _buildStepIndicator(BuildContext context) {
     return Column(
       children: [
@@ -352,7 +356,7 @@ class _DestinationDateView extends StatelessWidget {
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: 0.5,
+              widthFactor: 0.5,  
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.primary,
@@ -366,6 +370,7 @@ class _DestinationDateView extends StatelessWidget {
     );
   }
 
+  // Header Widget
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,6 +387,7 @@ class _DestinationDateView extends StatelessWidget {
     );
   }
 
+  // Calendar Widget 
   Widget _buildCalendar(
       BuildContext context, DestinationDateController controller) {
     final firstDay = DateTime(
@@ -401,6 +407,7 @@ class _DestinationDateView extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Day headers 
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
@@ -429,6 +436,7 @@ class _DestinationDateView extends StatelessWidget {
             ),
           ),
 
+          // Calendar grid 
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -439,13 +447,14 @@ class _DestinationDateView extends StatelessWidget {
             ),
             itemCount: 42,
             itemBuilder: (context, index) {
+              // Calculate which day of month
               final dayOffset = index -
                       (startingWeekday == 7 ? 0 : startingWeekday) +
                   1;
-              final isCurrentMonth =
-                  dayOffset > 0 && dayOffset <= daysInMonth;
+              final isCurrentMonth = dayOffset > 0 && dayOffset <= daysInMonth;
               final day = isCurrentMonth ? dayOffset : null;
 
+              // Check if day is selectable not in past
               bool isSelectable = false;
               if (isCurrentMonth) {
                 if (controller.currentMonth.year > today.year ||
@@ -458,36 +467,29 @@ class _DestinationDateView extends StatelessWidget {
                 }
               }
 
+              // Date range 
               final isFrom = isCurrentMonth &&
                   controller.fromDate != null &&
                   day == controller.fromDate!.day &&
-                  controller.currentMonth.month ==
-                      controller.fromDate!.month &&
-                  controller.currentMonth.year ==
-                      controller.fromDate!.year;
+                  controller.currentMonth.month == controller.fromDate!.month &&
+                  controller.currentMonth.year == controller.fromDate!.year;
 
               final isTo = isCurrentMonth &&
                   controller.toDate != null &&
                   day == controller.toDate!.day &&
-                  controller.currentMonth.month ==
-                      controller.toDate!.month &&
-                  controller.currentMonth.year ==
-                      controller.toDate!.year;
+                  controller.currentMonth.month == controller.toDate!.month &&
+                  controller.currentMonth.year == controller.toDate!.year;
 
               final isInRange = isCurrentMonth &&
                   controller.fromDate != null &&
                   controller.toDate != null &&
                   day! >= controller.fromDate!.day &&
                   day <= controller.toDate!.day &&
-                  controller.currentMonth.month ==
-                      controller.fromDate!.month &&
-                  controller.currentMonth.year ==
-                      controller.fromDate!.year;
+                  controller.currentMonth.month == controller.fromDate!.month &&
+                  controller.currentMonth.year == controller.fromDate!.year;
 
               return GestureDetector(
-                onTap: isSelectable
-                    ? () => controller.selectDay(day!)
-                    : null,
+                onTap: isSelectable ? () => controller.selectDay(day!) : null,
                 child: Container(
                   margin: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -503,8 +505,7 @@ class _DestinationDateView extends StatelessWidget {
                       day != null ? '$day' : '',
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight:
-                            isFrom || isTo ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isFrom || isTo ? FontWeight.bold : FontWeight.normal,
                         color: isSelectable
                             ? (isFrom || isTo
                                 ? AppColors.white
@@ -512,7 +513,7 @@ class _DestinationDateView extends StatelessWidget {
                                     ? AppColors.accent
                                     : AppColors.textPrimary)
                             : AppColors.greyDark,
-                         ),
+                      ),
                     ),
                   ),
                 ),
@@ -523,3 +524,4 @@ class _DestinationDateView extends StatelessWidget {
       ),
     );
   }
+}

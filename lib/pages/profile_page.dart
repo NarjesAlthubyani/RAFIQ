@@ -153,7 +153,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               child: const Icon(
                                 Icons.person,
                                 size: 34,
-                                color: Colors.white,
+                                color: AppColors.white,
                               ),
                             ),
                           ),
@@ -193,7 +193,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             child: Icon(
                               _isEditing ? Icons.check : Icons.edit,
-                              color: Colors.white,
+                              color: AppColors.white,
                               size: 18,
                             ),
                           ),
@@ -217,11 +217,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             (route) => false,
                           );
                         },
-                        icon: const Icon(Icons.logout, color: Colors.white),
+                        icon: const Icon(Icons.logout, color: AppColors.white),
                         label: const Text(
                           'Log out',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -331,7 +331,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           trailing: Switch(
                             value: _theme,
                             onChanged: (v) => setState(() => _theme = v),
-                            thumbColor: WidgetStateProperty.all(Colors.white),
+                            thumbColor: WidgetStateProperty.all(AppColors.white),
                             trackColor: WidgetStateProperty.resolveWith((
                               states,
                             ) {
@@ -348,7 +348,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           trailing: Switch(
                             value: _pushNoti,
                             onChanged: (v) => setState(() => _pushNoti = v),
-                            thumbColor: WidgetStateProperty.all(Colors.white),
+                            thumbColor: WidgetStateProperty.all(AppColors.white),
                             trackColor: WidgetStateProperty.resolveWith((
                               states,
                             ) {
@@ -410,7 +410,7 @@ class _SwitchRow extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          thumbColor: WidgetStateProperty.all(Colors.white),
+          thumbColor: WidgetStateProperty.all(AppColors.white),
           trackColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const Color(0xFF79926C);

@@ -241,7 +241,7 @@ class _ScanPageState extends State<ScanPage> {
                 padding: const EdgeInsets.only(top: 16),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(color: AppColors.red),
                 ),
               ),
 
@@ -267,10 +267,10 @@ class _ScanPageState extends State<ScanPage> {
                     margin: const EdgeInsets.only(top: 16),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black12, blurRadius: 8)
+                        BoxShadow(color: AppColors.black, blurRadius: 8)
                       ],
                     ),
                     child: Text(
@@ -278,7 +278,7 @@ class _ScanPageState extends State<ScanPage> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.red,
+                        color: AppColors.red,
                       ),
                     ),
                   );
@@ -288,11 +288,11 @@ class _ScanPageState extends State<ScanPage> {
                   margin: const EdgeInsets.only(top: 16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: const [
                       BoxShadow(
-                        color: Colors.black12,
+                        color: AppColors.black,
                         blurRadius: 8,
                       ),
                     ],

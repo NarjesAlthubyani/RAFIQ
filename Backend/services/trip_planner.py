@@ -1,24 +1,34 @@
 import os
 import math
+import sys
 from supabase import create_client
 from dotenv import load_dotenv
 from typing import List, Dict, Any, Optional
-from Backend.services.ai_adapter import AIAdapter
 
+# Add current directory to path for local imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from ai_adapter import AIAdapter
+
+# Load environment variables from .env file
 load_dotenv()
 
+# Get Supabase credentials 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
 
+# Initialize Supabase client
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Main Trip Planner Class
 class TripPlanner:
 
     def __init__(self):
         self.ai_adapter = AIAdapter()
-        self.day_start_hour = 9
-        self.day_end_hour = 21
+        self.day_start_hour = 9      
+        self.day_end_hour = 21       
 
+    # Database Operations
     def get_places_from_db(self, city: str) -> List[Dict]:
         response = supabase.table("saudi_places").select("*").eq("city", city).execute()
 
@@ -26,16 +36,20 @@ class TripPlanner:
             tags = place.get("tags", []) or []
             category = str(place.get("category", "")).lower()
 
+            # Create unified tags list from original tags + category
             place["all_tags"] = list(set(
                 [t.lower() for t in tags] + ([category] if category else [])
             ))
 
         return response.data
 
+    # Duration & Time
     def get_place_duration(self, place: Dict) -> int:
         return max(30, int(place.get("duration_minutes", 120)))
 
+    # Distance Calculations 
     def place_distance(self, p1: Dict, p2: Dict) -> float:
+       
         if not p1 or not p2:
             return 9999
 
@@ -45,27 +59,37 @@ class TripPlanner:
         if not lat1 or not lng1 or not lat2 or not lng2:
             return 9999
 
-        R = 6371
+        R = 6371  
+        
+        # Convert to radians
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lng1, lat2, lng2])
         dlat = lat2 - lat1
         dlon = lon2 - lon1
 
+        # Haversine formula
         a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
         return R * 2 * math.asin(math.sqrt(a))
 
     def calculate_distance_time(self, p1: Dict, p2: Dict) -> int:
         distance = self.place_distance(p1, p2)
 
-        if distance <= 1: return 5
-        if distance <= 3: return 10
-        if distance <= 5: return 15
-        if distance <= 10: return 20
-        return 30
-
+        if distance <= 1:
+            return 5      
+        if distance <= 3:
+            return 10     
+        if distance <= 5:
+            return 15     
+        if distance <= 10:
+            return 20    
+        return 30          
+    
+    # Cost Estimation
     def estimate_cost(self, place: Dict) -> int:
         return place.get("price_level", 2) * 60
 
+    # Scoring System
     def score_place(self, place: Dict, interests: List[str]) -> float:
+    
         tags = set(place.get("all_tags", []))
         interests = set([i.lower() for i in interests])
 
@@ -73,12 +97,13 @@ class TripPlanner:
         for i in interests:
             for t in tags:
                 if i == t:
-                    score += 5
+                    score += 5     
                 elif i in t or t in i:
-                    score += 2
+                    score += 2      
 
         return score
 
+    # Place Classification
     def is_food(self, place: Dict) -> bool:
         category = str(place.get("category", "")).lower()
         return any(x in category for x in ["food", "restaurant", "cafe", "coffee"])
@@ -96,6 +121,7 @@ class TripPlanner:
     def covers_meal(self, place: Dict) -> bool:
         return place.get("covers_meal", False)
 
+    # Location Clustering
     def cluster_by_location(self, places: List[Dict]) -> List[List[Dict]]:
         clusters = []
         used = [False] * len(places)
@@ -104,9 +130,11 @@ class TripPlanner:
             if used[i]:
                 continue
 
+            # Start new cluster
             cluster = [places[i]]
             used[i] = True
 
+            # Find all places within 3km 
             for j in range(i + 1, len(places)):
                 if used[j]:
                     continue
@@ -119,7 +147,9 @@ class TripPlanner:
 
         return clusters
 
+    # Daily Schedule Creation=
     def create_daily_schedule(self, day, attractions, breakfast, lunch, dinner):
+       
         activities = []
         current_time = self.day_start_hour
         last_place = None
@@ -128,17 +158,21 @@ class TripPlanner:
         def add(place, type_name):
             nonlocal current_time, last_place, last_was_food
 
+            # Add travel time from previous place
             travel = self.calculate_distance_time(last_place, place) if last_place else 0
             current_time += travel / 60
 
             duration = self.get_place_duration(place)
 
+            # Check if activity fits within day hours
             if current_time + duration / 60 > self.day_end_hour:
                 return False
 
+            # Prevent two food places in a row
             if self.is_food(place) and last_was_food:
                 return False
 
+            # Add activity to schedule
             activities.append({
                 "time": f"{int(current_time):02d}:{int((current_time % 1) * 60):02d}",
                 "name": place["name"],
@@ -152,12 +186,14 @@ class TripPlanner:
                 "ticket_booking": place.get("ticket_booking", False),
             })
 
+            # Update time and track last place
             current_time += duration / 60
             last_place = place
             last_was_food = self.is_food(place)
 
             return True
 
+        # Build schedule in logical order
         if breakfast:
             add(breakfast, "breakfast")
 
@@ -182,45 +218,60 @@ class TripPlanner:
         }
 
     async def create_trip_plan(self, city, days, interests, budget):
+        
+        # Fetch all places from database
         all_places = self.get_places_from_db(city)
 
+        # Separate attractions from meals
         attractions = [p for p in all_places if not self.is_food(p)]
         meals = [p for p in all_places if self.is_food(p)]
 
+        # AI selects best attractions
         selected = await self.ai_adapter.select_attractions(city, interests, budget, days, attractions)
 
+        # Score and sort attractions by relevance
         for p in selected:
             p["score"] = self.score_place(p, interests)
 
         selected.sort(key=lambda x: x["score"], reverse=True)
 
+        # Group nearby attractions into clusters
         clusters = self.cluster_by_location(selected)
 
+        # Track used items to avoid duplicates
         used = set()
         days_list = []
         total_cost = 0
 
+        # Separate food places by type
         cafes = [p for p in meals if self.get_food_type(p) == "cafe"]
         restaurants = [p for p in meals if self.get_food_type(p) == "restaurant"]
 
+        # Build each day's schedule
         for d in range(1, days + 1):
 
+            # Get cluster for this day
             cluster = clusters[d-1] if d-1 < len(clusters) else []
 
+            # Start with attractions from this day's cluster
             day_attractions = [p for p in cluster if p["id"] not in used][:4]
 
+            # Mark attractions as used
             for p in day_attractions:
                 used.add(p["id"])
 
+            # Select meals
             breakfast = cafes[d-1] if d-1 < len(cafes) else None
             lunch = restaurants[d-1] if d-1 < len(restaurants) else None
             dinner = restaurants[d] if d < len(restaurants) else None
 
+            # Create daily schedule
             day_plan = self.create_daily_schedule(d, day_attractions, breakfast, lunch, dinner)
 
             days_list.append(day_plan)
             total_cost += day_plan["daily_cost"]
 
+        # Return final trip plan
         return {
             "days": days_list,
             "total_cost": total_cost,
@@ -228,6 +279,7 @@ class TripPlanner:
         }
 
 
+# Public API Function
 async def generate_trip_plan(city, days, interests, budget):
     planner = TripPlanner()
     return await planner.create_trip_plan(city, days, interests, budget)
