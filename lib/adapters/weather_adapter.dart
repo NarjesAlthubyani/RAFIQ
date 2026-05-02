@@ -5,7 +5,7 @@ import '../services/auth_service.dart';
 class WeatherAdapter {
 // WeatherAdapter is responsible for converting raw weather conditions
 // into structured AlertModel objects used by the application.
-  static AlertModel? convertToAlert(String? condition, String city) {
+  static AlertModel? convertToAlert(String? condition, String city, String userId) {
     if (condition == null) return null;
 
     // Turn it into an Alert only if the weather is important
@@ -19,7 +19,7 @@ class WeatherAdapter {
       // Create a structured alert object for storage and display
       return AlertModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: AuthService.currentUser!.id,
+        userId: userId,
         title: "Weather Alert",
         description: "Bad weather expected: $condition in $city",
         type: "weather",

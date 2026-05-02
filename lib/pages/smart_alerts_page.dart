@@ -65,12 +65,16 @@ class _SmartAlertsPageState extends State<SmartAlertsPage> {
 // and generates a weather alert if conditions are severe.
 Future<void> checkWeather() async {
   final weatherService = WeatherService();
+  
 
   final currentCity = await getUserCity(); // update link city according user's city from DB
   // Fetch weather condition from external service "OpenWeather APIs"
   final condition = await weatherService.getWeatherCondition(currentCity);
+  //update for make it testable
+  final user = AuthService.currentUser;
+  if (user == null) return;
   // Convert weather condition into an alert object if needed
-  final alert = WeatherAdapter.convertToAlert(condition, currentCity);
+  final alert = WeatherAdapter.convertToAlert(condition, currentCity, user.id);
 
   // Store alert in database and refresh UI if alert is generated
   if (alert != null) {
