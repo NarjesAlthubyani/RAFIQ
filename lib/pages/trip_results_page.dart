@@ -84,44 +84,46 @@ class _TripResultsView extends StatelessWidget {
       builder: (sheetContext) {
         return Container(
           padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Select Day', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 14),
-              ...days.map((day) => ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppColors.primary,
-                  child: Text('${day.day}', style: const TextStyle(color: AppColors.white)),
-                ),
-                title: Text('Day ${day.day}'),
-                subtitle: Text(_formatDate(day.date)),
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  
-                  // Navigate to AddActivityPage and wait for result
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AddActivityPage(
-                        tripId: tripId,
-                        dayNumber: day.day,
-                        dayDate: day.date,
-                        existingActivities: day.activities,
-                        destinationCity: destinationCity,
-                        onActivitiesAdded: (activities) async {
-                          // Add each selected activity to the day
-                          for (var activity in activities) {
-                            await controller.addActivity(day.day, activity);
-                          }
-                          await controller.loadTrip();
-                        },
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Select Day', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 14),
+                ...days.map((day) => ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary,
+                    child: Text('${day.day}', style: const TextStyle(color: AppColors.white)),
+                  ),
+                  title: Text('Day ${day.day}'),
+                  subtitle: Text(_formatDate(day.date)),
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    
+                    // Navigate to AddActivityPage and wait for result
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AddActivityPage(
+                          tripId: tripId,
+                          dayNumber: day.day,
+                          dayDate: day.date,
+                          existingActivities: day.activities,
+                          destinationCity: destinationCity,
+                          onActivitiesAdded: (activities) async {
+                            // Add each selected activity to the day
+                            for (var activity in activities) {
+                              await controller.addActivity(day.day, activity);
+                            }
+                            await controller.loadTrip();
+                          },
+                        ),
                       ),
-                    ),
-                  );
-                },
-              )).toList(),
-            ],
+                    );
+                  },
+                )).toList(),
+              ],
+            ),
           ),
         );
       },
@@ -490,8 +492,6 @@ class _TripResultsView extends StatelessWidget {
                       const SnackBar(content: Text('Activities added successfully!'), backgroundColor: AppColors.secondary),
                     );
                   }
-                } else {
-                  _showDaySelectionDialog(context, controller, days);
                 }
               },
               icon: Icon(Icons.add, color: AppColors.greyDark, size: 20),

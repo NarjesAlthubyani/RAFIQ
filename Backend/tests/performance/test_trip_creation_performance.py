@@ -1,39 +1,118 @@
-import sys
-import os
-import asyncio
+import pytest
 import time
-backend_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, backend_path)
+from Backend.services.trip_planner_service import TripPlannerService
 
-from services.trip_planner import generate_trip_plan
+# Global list to store performance results for all test cases
+results = []
 
+# print a summary table after all tests finish
+@pytest.fixture(scope="session", autouse=True)
+def print_table(request):
+
+    def finalize():
+        print("\n-------------------------------------")
+        print("City      Days      Time (s)")
+        print("-------------------------------------")
+
+        # Loop through collected results and print them in formatted table
+        for city, days, duration in results:
+            print(f"{city:<10} {days:<5}    {duration:>6.2f}")
+
+        print("-------------------------------------\n")
+
+    request.addfinalizer(finalize)
+
+# Performance Test 
 class TestTripCreationPerformance:
-    
-    def test_performance_comparison(self):
+    async def _run_with_timing(self, city, days, interests, budget):
 
-        # Performance comparison across different cities
-        test_cases = [
-            ("Riyadh", 3, ["history", "food"], 3000),
-            ("Jeddah", 2, ["nature", "shopping"], 2000),
-            ("AlUla", 6, ["history", "nature"], 10000),
-        ]
-        
-        # Print table header for performance results
-        print("-"*60)
-        print("\nCity    Days    Time (s)")
-        print("-"*60)
-        
-        for city, days, interests, budget in test_cases:
-            start = time.time()
-            # Generate trip plan
-            result = asyncio.run(generate_trip_plan(city, days, interests, budget))
-            # Calculate execution time
-            duration = time.time() - start
-            # Display result
-            print(f"{city}    {days}    {duration:.2f}")
+        # Create a new instance of TripPlannerService
+        planner = TripPlannerService()
 
-if __name__ == "__main__":
-    test = TestTripCreationPerformance()
-    test.test_performance_comparison()
+        # Record start time
+        start = time.time()
 
-    
+        # Call the main function to generate trip plan
+        result = await planner.create_trip_plan(
+            city=city,
+            days=days,
+            interests=interests,
+            budget=budget
+        )
+
+        # Record end time
+        end = time.time()
+
+        # Calculate total execution time
+        duration = end - start
+
+        # Print performance result for this specific test case
+        print(f"\nPerformance ({city}, {days} days): {duration:.2f} seconds")
+
+        # Return both result and execution time
+        return result, duration
+
+
+    # Test 1: performance for Riyadh trip planning
+    @pytest.mark.asyncio
+    async def test_performance_riyadh(self):
+
+        city = "Riyadh"
+        days = 3
+
+        # Run test and measure performance
+        result, duration = await self._run_with_timing(
+            city,
+            days,
+            ["history", "food", "shopping"],
+            3000
+        )
+
+        # Store result for final summary table
+        results.append((city, days, duration))
+
+        # Basic assertion to ensure a result is returned
+        assert result is not None
+
+    # Test 2: performance for Jeddah trip planning
+    @pytest.mark.asyncio
+    async def test_performance_jeddah(self):
+
+        city = "Jeddah"
+        days = 2
+
+        # Run test and measure performance
+        result, duration = await self._run_with_timing(
+            city,
+            days,
+            ["nature", "entertainment"],
+            5000
+        )
+
+        # Store result for final summary table
+        results.append((city, days, duration))
+
+        # Ensure result is valid
+        assert result is not None
+
+    # Test 3:performance for AlUla trip planning
+    @pytest.mark.asyncio
+    async def test_performance_alula(self):
+
+        city = "AlUla"
+        days = 6
+
+        # Run test and measure performance
+        result, duration = await self._run_with_timing(
+            city,
+            days,
+            ["history", "nature"],
+            7000
+        )
+
+        # Store result for final summary table
+        results.append((city, days, duration))
+
+        # Ensure result is valid
+        assert result is not None
+

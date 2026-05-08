@@ -26,7 +26,7 @@ class AIPlannerService {
               'budget': budget,
             }),
           )
-          .timeout(const Duration(seconds: 90));  
+          .timeout(const Duration(seconds: 120));  
 
       // Return parsed JSON on success
       if (response.statusCode == 200) {

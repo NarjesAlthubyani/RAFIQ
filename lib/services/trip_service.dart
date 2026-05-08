@@ -226,7 +226,7 @@ class TripService {
     }
   }
 
-  // Get AI response for a trip
+  // Get AI response for a trip 
   static Future<Map<String, dynamic>?> getAiResponse(String tripId) async {
     try {
       final response = await supabase

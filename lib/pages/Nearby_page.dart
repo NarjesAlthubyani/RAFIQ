@@ -336,6 +336,7 @@ class ActivityCard extends StatelessWidget {
       case 'food':
       case 'restaurant':
       case 'cafe':
+      case 'Food':
         return Icons.restaurant;
       case 'nature':
         return Icons.nature;
