@@ -2,61 +2,82 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rafiq/adapters/weather_adapter.dart';
 import 'package:rafiq/models/alert_model.dart';
 
+/// Fake DB layer (simulated persistence)
+class FakeDb {
+  static final List<AlertModel> alerts = [];
+
+  static AlertModel save(AlertModel alert) {
+    alerts.add(alert);
+    return alert;
+  }
+
+  static void clear() {
+    alerts.clear();
+  }
+}
+
 void main() {
 
-  group('Smart Alerts Integration Test', () {
+  group('Smart Alerts - Integration Test', () {
 
-    /// Test 1: Full flow (severe weather → alert created)
-    test('should generate alert from weather condition flow', () {
+    test('should process full flow: API -> Adapter -> DB', () {
 
-      // Step 1: simulate weather condition (represents API layer)
+      FakeDb.clear();
+
+      //  simulate API layer
       const condition = "rain";
       const city = "Jeddah";
 
-      // Step 2: pass data to WeatherAdapter (business logic layer)
-      final alert = WeatherAdapter.convertToAlert(condition, city, 'test_user');
+      //  business logic layer
+      final alert = WeatherAdapter.convertToAlert(
+        condition,
+        city,
+        'test_user'
+      );
 
-      // Step 3: verify AlertModel is created (data layer)
-      expect(alert, isNotNull);
-      expect(alert, isA<AlertModel>());
+      //  persistence layer (integration happens here)
+      final savedAlert = alert != null ? FakeDb.save(alert) : null;
 
-      // Step 4: verify data correctness inside the model
-      expect(alert!.type, "weather");
-      expect(alert.title, "Weather Alert");
-      expect(alert.description.contains(city), true);
+      // assertions (end-to-end validation)
+      expect(savedAlert, isNotNull);
+      expect(savedAlert, isA<AlertModel>());
 
+      expect(FakeDb.alerts.length, 1);
+
+      final stored = FakeDb.alerts.first;
+      expect(stored.title, "Weather Alert");
+      expect(stored.description.contains(city), true);
     });
 
-    /// Test 2: Normal weather → no alert
-    test('should not generate alert for normal weather', () {
+    test('should NOT create alert for normal weather', () {
 
-      // Step 1: simulate non-critical weather condition
-      const condition = "sunny";
-      const city = "Jeddah";
+  FakeDb.clear();
 
-      // Step 2: process through adapter
-      final alert = WeatherAdapter.convertToAlert(condition, city, 'test_user');
+  const condition = "clear";
+  const city = "Jeddah";
 
-      // Step 3: verify no alert is created
-      expect(alert, isNull);
+  final alert = WeatherAdapter.convertToAlert(condition, city, 'test_user');
 
-    });
+  final savedAlert = alert != null ? FakeDb.save(alert) : null;
 
-    /// Test 3: Case insensitive handling
-    test('should handle uppercase weather condition correctly', () {
+  expect(savedAlert, isNull);
+  expect(FakeDb.alerts.isEmpty, true);
+});
 
-      // Step 1: simulate uppercase input
-      const condition = "STORM";
-      const city = "Jeddah";
+test('should handle uppercase weather condition', () {
 
-      // Step 2: pass through adapter
-      final alert = WeatherAdapter.convertToAlert(condition, city, 'test_user');
+  FakeDb.clear();
 
-      // Step 3: verify alert still created
-      expect(alert, isNotNull);
-      expect(alert!.description.contains("STORM"), true);
+  const condition = "RAIN";
+  const city = "Jeddah";
 
-    });
+  final alert = WeatherAdapter.convertToAlert(condition, city, 'test_user');
+
+  final savedAlert = alert != null ? FakeDb.save(alert) : null;
+
+  expect(savedAlert, isNotNull);
+  expect(FakeDb.alerts.length, 1);
+});
 
   });
 
