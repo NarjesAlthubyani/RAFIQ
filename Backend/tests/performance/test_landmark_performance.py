@@ -10,28 +10,44 @@ from Backend.main import app
 
 client = TestClient(app)
 
-test_cases = [
-    ("Elephant Rock", Path("Backend/tests/test_images/elephant_rock_test.jpg")),
-]
+TEST_IMAGE_PATH = Path("Backend/tests/test_images/elephant_rock_test.jpg")
 
-def test_landmark_performance_comparison():
-    print("\n----------------------------------------")
-    print("Image              Time (s)")
-    print("----------------------------------------")
+def test_landmark_performance_average():
+    assert TEST_IMAGE_PATH.exists(), "Test image file does not exist."
 
-    for image_name, image_path in test_cases:
-        assert image_path.exists(), f"{image_name} test image does not exist."
+    runs = 5
+    total_time = 0
 
+    print("\n-----------------------------------------")
+    print("Image              Average Response Time (s)")
+    print("-----------------------------------------")
+
+    for _ in range(runs):
         start_time = time.time()
 
-        with open(image_path, "rb") as image_file:
+        with open(TEST_IMAGE_PATH, "rb") as image_file:
             response = client.post(
                 "/api/landmarks/recognize",
-                files={"image": (image_path.name, image_file, "image/jpeg")}
+                files={
+                    "image": (
+                        TEST_IMAGE_PATH.name,
+                        image_file,
+                        "image/jpeg",
+                    )
+                },
             )
 
-        duration = time.time() - start_time
-
-        print(f"{image_name:<18} {duration:.2f}")
+        end_time = time.time()
+        duration = end_time - start_time
+        total_time += duration
 
         assert response.status_code == 200
+
+    average_time = total_time / runs
+
+    print(f"{'Elephant Rock':<18} {average_time:.2f}")
+    print("-----------------------------------------")
+    print(f"Overall Average Response Time: {average_time:.2f} seconds")
+    print("-----------------------------------------")
+
+    assert average_time < 10
