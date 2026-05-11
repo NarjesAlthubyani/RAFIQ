@@ -1,7 +1,5 @@
 import math
-
 from torch import add
-
 from Backend.routers.activities import activities
 
 # AttractionSelector

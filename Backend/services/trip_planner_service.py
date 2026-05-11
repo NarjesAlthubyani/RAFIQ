@@ -1,4 +1,3 @@
-# TripPlannerService: Main orchestrator that builds the full trip plan
 import math
 from Backend.data.place_repository import place_repo
 from Backend.adapters.ai_adapter import ai_client

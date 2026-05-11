@@ -1,5 +1,4 @@
 from typing import Any, Dict, List, Optional
-
 from Backend.utils.distance import haversine_km
 from Backend.adapters.db_adapter import fetch_db_activities
 
@@ -16,7 +15,6 @@ def bucket_from_minutes(minutes: Optional[int]) -> Optional[str]:
     if minutes <= 180:
         return "2-3h"
     return "3h+"
-
 
 async def get_activities(
     lat: float,

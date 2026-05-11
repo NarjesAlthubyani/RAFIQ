@@ -2,117 +2,77 @@ import pytest
 import time
 from Backend.services.trip_planner_service import TripPlannerService
 
-# Global list to store performance results for all test cases
-results = []
+# Global list to store execution times for all 8 performance cases
+all_durations = []
 
-# print a summary table after all tests finish
+def convert_budget_range(budget_range):
+    mapping = {
+        "500-1000": 750,
+        "1000-2000": 1500,
+        "2000-5000": 3500,
+        "5000-10000": 7500,
+        "10000+": 12000
+    }
+    return mapping[budget_range]
+
+# print the final average 
 @pytest.fixture(scope="session", autouse=True)
-def print_table(request):
+def print_summary(request):
 
     def finalize():
-        print("\n-------------------------------------")
-        print("City      Days      Time (s)")
-        print("-------------------------------------")
+        # Calculate the average execution time across all 8 cases
+        avg = sum(d for _, _, d in all_durations) / len(all_durations)
 
-        # Loop through collected results and print them in formatted table
-        for city, days, duration in results:
-            print(f"{city:<10} {days:<5}    {duration:>6.2f}")
-
-        print("-------------------------------------\n")
+        print("------------------------------------------------")
+        print(f"Average Time Across 8 Cases: {avg:.2f} seconds")
+        print("------------------------------------------------\n")
 
     request.addfinalizer(finalize)
 
-# Performance Test 
 class TestTripCreationPerformance:
-    async def _run_with_timing(self, city, days, interests, budget):
 
-        # Create a new instance of TripPlannerService
+    async def _run_case(self, city, days, interests, budget_range):
         planner = TripPlannerService()
 
-        # Record start time
+        # Convert UI budget range → numeric backend value
+        budget_value = convert_budget_range(budget_range)
+
+        # Start timing
         start = time.time()
 
-        # Call the main function to generate trip plan
+        # Execute the trip creation process
         result = await planner.create_trip_plan(
             city=city,
             days=days,
             interests=interests,
-            budget=budget
+            budget=budget_value
         )
 
-        # Record end time
+        # End timing
         end = time.time()
-
-        # Calculate total execution time
         duration = end - start
 
-        # Print performance result for this specific test case
-        print(f"\nPerformance ({city}, {days} days): {duration:.2f} seconds")
-
-        # Return both result and execution time
-        return result, duration
-
-
-    # Test 1: performance for Riyadh trip planning
-    @pytest.mark.asyncio
-    async def test_performance_riyadh(self):
-
-        city = "Riyadh"
-        days = 3
-
-        # Run test and measure performance
-        result, duration = await self._run_with_timing(
-            city,
-            days,
-            ["history", "food", "shopping"],
-            3000
-        )
-
-        # Store result for final summary table
-        results.append((city, days, duration))
-
-        # Basic assertion to ensure a result is returned
+        # Ensure the trip plan was generated successfully
         assert result is not None
+        return duration
 
-    # Test 2: performance for Jeddah trip planning
     @pytest.mark.asyncio
-    async def test_performance_jeddah(self):
+    async def test_10_cases(self):
 
-        city = "Jeddah"
-        days = 2
+        # 8 different trip creation 
+        cases = [
+            ("Riyadh", 3, ["history", "food"], "500-1000"),
+            ("Jeddah", 2, ["nature", "entertainment"], "1000-2000"),
+            ("AlUla", 6, ["history", "nature"], "2000-5000"),
+            ("Jeddah", 4, ["shopping", "food"], "5000-10000"),
+            ("AlUla", 3, ["nature"], "10000+"),
+            ("Jeddah", 2, ["entertainment", "adventure"], "500-1000"),
+            ("Jeddah", 3, ["shopping", "culture"], "1000-2000"),
+            ("Riyadh", 1, ["culture"], "2000-5000"),
+        ]
 
-        # Run test and measure performance
-        result, duration = await self._run_with_timing(
-            city,
-            days,
-            ["nature", "entertainment"],
-            5000
-        )
-
-        # Store result for final summary table
-        results.append((city, days, duration))
-
-        # Ensure result is valid
-        assert result is not None
-
-    # Test 3:performance for AlUla trip planning
-    @pytest.mark.asyncio
-    async def test_performance_alula(self):
-
-        city = "AlUla"
-        days = 6
-
-        # Run test and measure performance
-        result, duration = await self._run_with_timing(
-            city,
-            days,
-            ["history", "nature"],
-            7000
-        )
-
-        # Store result for final summary table
-        results.append((city, days, duration))
-
-        # Ensure result is valid
-        assert result is not None
-
+        # Run all 8 cases and store their durations
+        for city, days, interests, budget_range in cases:
+            duration = await self._run_case(city, days, interests, budget_range)
+            all_durations.append((city, days, duration))
+            
