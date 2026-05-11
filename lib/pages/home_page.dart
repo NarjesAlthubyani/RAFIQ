@@ -12,6 +12,8 @@ import '../services/trip_service.dart';
 import '../models/nearby_activity.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class HomePage extends StatefulWidget {
   final int initialIndex; 
@@ -186,7 +188,15 @@ class HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<HomeContent> {
   // API configuration
-  static const String _baseUrl = 'http://10.0.2.2:8000';
+  static String get baseUrl {
+    if (kIsWeb) {
+      return "http://localhost:8000";
+    } else if (Platform.isAndroid) {
+      return "http://10.0.2.2:8000";
+    } else {
+      return "http://localhost:8000";
+    }
+}
   
   // Recommendations data
   List<NearbyActivity> _recommendations = [];
@@ -246,7 +256,7 @@ class _HomeContentState extends State<HomeContent> {
         'limit': '2', 
       };
 
-      final uri = Uri.parse('$_baseUrl/activities').replace(queryParameters: params);
+      final uri = Uri.parse('${baseUrl}/activities').replace(queryParameters: params);
       final response = await http.get(uri);
 
       if (response.statusCode == 200) {

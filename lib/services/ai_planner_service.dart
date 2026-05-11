@@ -1,11 +1,20 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class AIPlannerService {
 
   // Backend API URL
-  static const String baseUrl = 'http://10.0.2.2:8000';
-
+  static String get baseUrl {
+    if (kIsWeb) {
+      return "http://localhost:8000";
+    } else if (Platform.isAndroid) {
+      return "http://10.0.2.2:8000";
+    } else {
+      return "http://localhost:8000";
+    }
+}
   // Request AI trip plan from backend
   static Future<Map<String, dynamic>> planTrip({
     required String city,
@@ -17,7 +26,7 @@ class AIPlannerService {
       // Send POST request to backend
       final response = await http
           .post(
-            Uri.parse('$baseUrl/api/trip-planner/plan'),
+            Uri.parse('${baseUrl}/api/trip-planner/plan'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'city': city,

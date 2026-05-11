@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class NearbyPage extends StatefulWidget {
   const NearbyPage({super.key});
@@ -14,7 +16,15 @@ class NearbyPage extends StatefulWidget {
 }
 
 class _NearbyPageState extends State<NearbyPage> {
-  static const String _baseUrl = 'http://10.0.2.2:8000';
+  static String get baseUrl {
+    if (kIsWeb) {
+      return "http://localhost:8000";
+    } else if (Platform.isAndroid) {
+      return "http://10.0.2.2:8000";
+    } else {
+      return "http://localhost:8000";
+    }
+}
 
   List<NearbyActivity> _activities = [];
   bool _isLoading = false;
@@ -91,7 +101,7 @@ class _NearbyPageState extends State<NearbyPage> {
         params['available_minutes'] = availableMinutes.toString();
       }
 
-      final uri = Uri.parse('$_baseUrl/activities').replace(queryParameters: params);
+      final uri = Uri.parse('${baseUrl}/activities').replace(queryParameters: params);
       final res = await http.get(uri);
 
       if (res.statusCode != 200) {

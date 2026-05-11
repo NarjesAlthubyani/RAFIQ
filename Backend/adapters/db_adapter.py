@@ -1,7 +1,5 @@
-
 import os
 from typing import Any, Dict, List
-
 import httpx
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()

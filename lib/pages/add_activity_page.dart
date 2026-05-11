@@ -3,6 +3,8 @@ import '../theme/app_colors.dart';
 import '../models/nearby_activity.dart';
 import '../models/activity.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart'; 
 
@@ -32,7 +34,15 @@ class AddActivityPage extends StatefulWidget {
 class _AddActivityPageState extends State<AddActivityPage> {
 
   // Backend API URL 
-  static const String _baseUrl = 'http://10.0.2.2:8000';
+  static String get baseUrl {
+    if (kIsWeb) {
+      return "http://localhost:8000";
+    } else if (Platform.isAndroid) {
+      return "http://10.0.2.2:8000";
+    } else {
+      return "http://localhost:8000";
+    }
+  }
   
   // City coordinates for fallback when location is unavailable
   final Map<String, Map<String, double>> _cityCoordinates = {
@@ -100,7 +110,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
         'limit': '100',
       };
 
-      final uri = Uri.parse('$_baseUrl/activities').replace(queryParameters: params);
+      final uri = Uri.parse('${baseUrl}/activities').replace(queryParameters: params);
       final res = await http.get(uri);
 
       if (res.statusCode != 200) {
