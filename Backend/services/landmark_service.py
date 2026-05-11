@@ -13,18 +13,26 @@ recognizer = CLIPLandmarkRecognizer(
 THRESHOLD = 0.55
 
 def get_landmark_info(name: str):
-    url = f"{SUPABASE_URL}/rest/v1/landmarks?name=eq.{name}&select=name,description"
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-    }
-    r = requests.get(url, headers=headers, timeout=10)
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
 
-    if r.status_code == 200:
-        data = r.json()
-        if data:
-            return data[0]
-    return None
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/landmarks?name=eq.{name}&select=name,description"
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        }
+        r = requests.get(url, headers=headers, timeout=10)
+
+        if r.status_code == 200:
+            data = r.json()
+            if data:
+                return data[0]
+
+        return None
+
+    except requests.exceptions.RequestException:
+        return None
 
 def recognize_landmark(filename: str, image_bytes: bytes):
     # Get the closest landmark name and its similarity score
