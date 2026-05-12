@@ -20,7 +20,6 @@ class Interest {
 }
 
 class MyTripController extends ChangeNotifier {
-  
   // Trip Data 
   late String tripId;          
   late String preferenceId;     
@@ -29,7 +28,6 @@ class MyTripController extends ChangeNotifier {
   late DateTime toDate;         
 
   // Budget 
-  
   String? selectedBudgetRange = '2000 - 5000';  // Currently selected budget
   
   // Available budget options for dropdown
@@ -91,7 +89,6 @@ class MyTripController extends ChangeNotifier {
   List<String> get reviewInterests => selectedInterests;
 
   // Submission 
-  
   bool isSubmitting = false;    
   String? errorMessage;     
 

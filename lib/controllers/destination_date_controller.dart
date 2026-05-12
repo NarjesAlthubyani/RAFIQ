@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/trip_service.dart';
 
 class DestinationDateController extends ChangeNotifier {
-   
   // Trip Data 
   DateTime? fromDate;      
   DateTime? toDate;        
@@ -21,7 +20,6 @@ class DestinationDateController extends ChangeNotifier {
   }
 
   // Date Picker 
-  
   // Opens native date picker dialog for selecting From or To date
   Future<void> pickDate({
     required BuildContext context,
@@ -95,8 +93,7 @@ class DestinationDateController extends ChangeNotifier {
   }
 
   // Save to Database
-  
-  /// Saves trip request to database and returns preference ID
+  // Saves trip request to database and returns preference ID
   Future<String?> saveTripRequest() async {
     if (fromDate == null || toDate == null) {
       errorMessage = "Please select both dates.";

@@ -35,7 +35,6 @@ class TripLoadingController extends ChangeNotifier {
       );
 
   int dotCount = 0;              
-  
   bool navigateToResults = false;   
   
   // Initializes controller with trip data and starts generation process
@@ -88,7 +87,6 @@ class TripLoadingController extends ChangeNotifier {
   }
 
   // AI Trip Generation 
-  
   // Calls AI service to generate trip plan and saves to database
   Future<void> _generateTripWithAI() async {
     // Prevent multiple simultaneous generation attempts

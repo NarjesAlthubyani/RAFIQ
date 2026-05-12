@@ -49,9 +49,7 @@ class AuthService {
   }
 
   static User? get currentUser => supabase.auth.currentUser;
-  
   static bool get isLoggedIn => currentUser != null;
-  
   static Stream<AuthState> get authState => supabase.auth.onAuthStateChange;
   
   static Future<void> resetPassword(String email) async {

@@ -37,7 +37,6 @@ class TripResultsController extends ChangeNotifier {
   }
 
   // Trip Loading 
-
   // Sets up tripPlan with days and activities
   Future<void> loadTrip() async {
     isLoading = true;

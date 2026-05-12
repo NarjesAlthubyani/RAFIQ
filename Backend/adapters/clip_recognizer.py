@@ -4,7 +4,6 @@ import torch
 from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
 
-
 class CLIPLandmarkRecognizer:
     def __init__(self, ref_root="ref_images"):
         # Use GPU if available for faster processing

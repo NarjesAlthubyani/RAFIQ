@@ -6,13 +6,11 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "").strip()
 DEFAULT_TABLE = "NearBy_activity"
 
-
 def _assert_env() -> None:
     if not SUPABASE_URL or not SUPABASE_ANON_KEY:
         raise RuntimeError(
             "Missing SUPABASE_URL or SUPABASE_ANON_KEY. Put them in .env then restart uvicorn."
         )
-
 
 def _headers() -> Dict[str, str]:
     # Prepare headers for Supabase request
@@ -37,7 +35,6 @@ def normalize_record(row: Dict[str, Any]) -> Dict[str, Any]:
         "ticketBooking": row.get("ticket_booking"),
         "ticketLink": row.get("ticket_link"),
     }
-
 
 async def fetch_db_activities(
     *,
