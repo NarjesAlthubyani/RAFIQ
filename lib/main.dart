@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // Add this
+import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 import 'package:rafiq/services/supabase_config.dart';
 import 'package:rafiq/pages/splash_screen.dart';
 import 'package:rafiq/theme/app_colors.dart';

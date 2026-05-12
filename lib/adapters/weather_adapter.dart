@@ -1,5 +1,5 @@
 import '../models/alert_model.dart';
-import '../services/auth_service.dart';
+//import '../services/auth_service.dart';
 // WeatherAdapter is responsible for converting raw weather conditions
 // into structured AlertModel objects used by the application.
 class WeatherAdapter {
