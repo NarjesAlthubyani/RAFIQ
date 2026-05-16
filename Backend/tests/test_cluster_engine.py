@@ -3,13 +3,11 @@ from Backend.services.planning_services import ClusterEngine
 from types import SimpleNamespace
 
 class TestRealPlacesClustering:
-
     def setup_method(self):
         self.engine = ClusterEngine()
 
     # Test that nearby Riyadh landmarks are grouped into the same cluster
     def test_nearby_riyadh_places_cluster(self):
-        
         places = [
             # Kingdom Tower and Faisaliah Tower are close to each other
             SimpleNamespace(name='Kingdom Centre Tower', lat=24.7136, lng=46.6753),
@@ -19,13 +17,12 @@ class TestRealPlacesClustering:
         ]
 
         # Run clustering on the provided real coordinates
-        clusters = self.engine.cluster(places)
+        clusters = self.engine.cluster_for_days(places, days=1)
 
         assert any(len(c) >= 2 for c in clusters)
 
     # Test clustering behavior for real locations in Jeddah Corniche
     def test_jeddah_cluster(self):
-
         places = [
             SimpleNamespace(name='King Fahd Fountain', lat=21.5433, lng=39.1728),
             SimpleNamespace(name='Jeddah Corniche', lat=21.5447, lng=39.1553),
@@ -34,12 +31,11 @@ class TestRealPlacesClustering:
         ]
 
         # Cluster Jeddah locations
-        clusters = self.engine.cluster(places)
+        clusters = self.engine.cluster_for_days(places, days=1)
 
         assert any(len(c) >= 2 for c in clusters)
 
     def test_saudi_cities(self):
-    
         places = [
             SimpleNamespace(name='Riyadh Tower', lat=24.7136, lng=46.6753),
             SimpleNamespace(name='Jeddah Fountain', lat=21.5433, lng=39.1728),
@@ -47,8 +43,6 @@ class TestRealPlacesClustering:
         ]
 
         # Cluster distant cities
-        clusters = self.engine.cluster(places)
+        clusters = self.engine.cluster_for_days(places, days=3)
 
         assert len(clusters) >= 2
-
-        
